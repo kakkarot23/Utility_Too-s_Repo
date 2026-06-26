@@ -1,152 +1,91 @@
 import tkinter as tk
 from tkinter import ttk
 import math
-import ast
 import re
+from datetime import datetime
 
-# Theme specifications
-THEMES = {
-    "Cyberpunk Neon": {
-        "bg": "#120E2E",
-        "display_bg": "#1B143F",
-        "text": "#E0E0FF",
-        "text_secondary": "#B388FF",
-        "num_bg": "#261C5B",
-        "num_fg": "#00FFFF",
-        "num_hover": "#3D2B8C",
-        "op_bg": "#3D1054",
-        "op_fg": "#FF007F",
-        "op_hover": "#5C1680",
-        "spec_bg": "#FF007F",
-        "spec_fg": "#FFFFFF",
-        "spec_hover": "#FF3399",
-        "accent": "#00FFFF",
-        "sidebar_bg": "#151035",
-        "grid_color": "#2A205A",
-        "active_fg": "#FFFFFF"
-    },
-    "Deep Ocean": {
-        "bg": "#0B132B",
-        "display_bg": "#1C2541",
-        "text": "#FFFFFF",
-        "text_secondary": "#5BC0BE",
-        "num_bg": "#1C2541",
-        "num_fg": "#FFFFFF",
-        "num_hover": "#2A375E",
-        "op_bg": "#0B132B",
-        "op_fg": "#5BC0BE",
-        "op_hover": "#1C2541",
-        "spec_bg": "#5BC0BE",
-        "spec_fg": "#0B132B",
-        "spec_hover": "#6FFFE9",
-        "accent": "#6FFFE9",
-        "sidebar_bg": "#0F1935",
-        "grid_color": "#243763",
-        "active_fg": "#0B132B"
-    },
-    "Sakura Blossom": {
-        "bg": "#FFF0F5",
-        "display_bg": "#FFE4E1",
-        "text": "#4A2E35",
-        "text_secondary": "#D06A80",
-        "num_bg": "#FFE4E1",
-        "num_fg": "#4A2E35",
-        "num_hover": "#FFD1DC",
-        "op_bg": "#FFF0F5",
-        "op_fg": "#D06A80",
-        "op_hover": "#FFE4E1",
-        "spec_bg": "#FF82AB",
-        "spec_fg": "#FFFFFF",
-        "spec_hover": "#FFB7C5",
-        "accent": "#D06A80",
-        "sidebar_bg": "#FFF5F7",
-        "grid_color": "#FFD1DC",
-        "active_fg": "#FFFFFF"
-    },
-    "Retro Terminal": {
-        "bg": "#0D1117",
-        "display_bg": "#070A0E",
-        "text": "#58A6FF",
-        "text_secondary": "#8B949E",
-        "num_bg": "#161B22",
-        "num_fg": "#C9D1D9",
-        "num_hover": "#21262D",
-        "op_bg": "#161B22",
-        "op_fg": "#58A6FF",
-        "op_hover": "#21262D",
-        "spec_bg": "#2EA043",
-        "spec_fg": "#FFFFFF",
-        "spec_hover": "#3FB950",
-        "accent": "#58A6FF",
-        "sidebar_bg": "#161B22",
-        "grid_color": "#21262D",
-        "active_fg": "#FFFFFF"
-    }
-}
-
-class HoverButton(tk.Button):
-    """Custom flat button with smooth color transition on hover."""
-    def __init__(self, master, normal_bg, hover_bg, active_bg, normal_fg, hover_fg, active_fg, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+class RoundedButton(tk.Canvas):
+    """Custom flat button with rounded corners and smooth color transitions on hover."""
+    def __init__(self, master, text, radius=8, normal_bg="", hover_bg="", active_bg="", normal_fg="", hover_fg="", active_fg="", command=None, font=("Segoe UI", 10, "bold"), is_selected=False, image=None, *args, **kwargs):
+        super().__init__(master, bd=0, highlightthickness=0, cursor="hand2", *args, **kwargs)
+        self.text = text
+        self.radius = radius
         self.normal_bg = normal_bg
         self.hover_bg = hover_bg
         self.active_bg = active_bg
         self.normal_fg = normal_fg
         self.hover_fg = hover_fg
         self.active_fg = active_fg
+        self.command = command
+        self.font = font
+        self.is_selected = is_selected
+        self.image = image
         
-        self.configure(
-            bg=self.normal_bg,
-            fg=self.normal_fg,
-            activebackground=self.active_bg,
-            activeforeground=self.active_fg,
-            relief="flat",
-            bd=0,
-            highlightthickness=0,
-            cursor="hand2"
-        )
+        # Configure self background to match parent
+        self.configure(bg=master.cget("bg"))
+        
+        self.bind("<Configure>", self.on_resize)
+        self.bind("<Button-1>", self.on_press)
+        self.bind("<ButtonRelease-1>", self.on_release)
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
-        self.fade_job = None
+        
+    def set_selected(self, selected):
+        """Toggle button selection highlight."""
+        self.is_selected = selected
+        bg = self.active_bg if self.is_selected else self.normal_bg
+        fg = self.active_fg if self.is_selected else self.normal_fg
+        self.draw_button(bg, fg)
+        
+    def on_resize(self, event):
+        bg = self.active_bg if self.is_selected else self.normal_bg
+        fg = self.active_fg if self.is_selected else self.normal_fg
+        self.draw_button(bg, fg)
+        
+    def draw_button(self, bg, fg):
+        self.delete("all")
+        w = self.winfo_width()
+        h = self.winfo_height()
+        if w < 10 or h < 10:
+            return
+            
+        r = min(self.radius, w//2, h//2)
+        
+        # Draw rounded rectangle parts
+        self.create_arc(0, 0, 2*r, 2*r, start=90, extent=90, style="pieslice", fill=bg, outline=bg)
+        self.create_arc(w-2*r, 0, w, 2*r, start=0, extent=90, style="pieslice", fill=bg, outline=bg)
+        self.create_arc(0, h-2*r, 2*r, h, start=180, extent=90, style="pieslice", fill=bg, outline=bg)
+        self.create_arc(w-2*r, h-2*r, w, h, start=270, extent=90, style="pieslice", fill=bg, outline=bg)
+        self.create_rectangle(r, 0, w-r, h, fill=bg, outline=bg)
+        self.create_rectangle(0, r, w, h-r, fill=bg, outline=bg)
+        
+        # Draw text and image centered
+        if self.image:
+            self.create_image(w/2, h/2 - 10, image=self.image)
+            self.create_text(w/2, h/2 + 16, text=self.text, fill=fg, font=self.font, justify="center")
+        else:
+            self.create_text(w/2, h/2, text=self.text, fill=fg, font=self.font, justify="center")
+        
+    def on_press(self, event):
+        self.draw_button(self.active_bg, self.active_fg)
+        if self.command:
+            self.command()
+            
+    def on_release(self, event):
+        bg = self.hover_bg if self.winfo_containing(event.x_root, event.y_root) == self else self.normal_bg
+        fg = self.hover_fg if self.winfo_containing(event.x_root, event.y_root) == self else self.normal_fg
+        if self.is_selected:
+            bg, fg = self.active_bg, self.active_fg
+        self.draw_button(bg, fg)
         
     def on_enter(self, event):
-        self.configure(fg=self.hover_fg)
-        self.animate_bg(self.hover_bg)
-        
+        if not self.is_selected:
+            self.draw_button(self.hover_bg, self.hover_fg)
+            
     def on_leave(self, event):
-        self.configure(fg=self.normal_fg)
-        self.animate_bg(self.normal_bg)
-
-    def animate_bg(self, target_color):
-        if self.fade_job:
-            self.after_cancel(self.fade_job)
-            self.fade_job = None
-        self.fade_step(self.cget("bg"), target_color, 0, 6)
-
-    def fade_step(self, current_hex, target_hex, step, total_steps):
-        if step > total_steps:
-            self.configure(bg=target_hex)
-            return
-        
-        try:
-            r1, g1, b1 = self.master.winfo_rgb(current_hex)
-            r2, g2, b2 = self.master.winfo_rgb(target_hex)
+        if not self.is_selected:
+            self.draw_button(self.normal_bg, self.normal_fg)
             
-            # Map 16-bit to 8-bit color space
-            r1, g1, b1 = r1 // 256, g1 // 256, b1 // 256
-            r2, g2, b2 = r2 // 256, g2 // 256, b2 // 256
-            
-            r = int(r1 + (r2 - r1) * (step / total_steps))
-            g = int(g1 + (g2 - g1) * (step / total_steps))
-            b = int(b1 + (b2 - b1) * (step / total_steps))
-            
-            next_color = f"#{r:02x}{g:02x}{b:02x}"
-            self.configure(bg=next_color)
-            
-            self.fade_job = self.after(15, lambda: self.fade_step(next_color, target_hex, step + 1, total_steps))
-        except Exception:
-            self.configure(bg=target_hex)
-
     def update_colors(self, normal_bg, hover_bg, active_bg, normal_fg, hover_fg, active_fg):
         self.normal_bg = normal_bg
         self.hover_bg = hover_bg
@@ -154,1192 +93,1291 @@ class HoverButton(tk.Button):
         self.normal_fg = normal_fg
         self.hover_fg = hover_fg
         self.active_fg = active_fg
-        self.configure(
-            bg=self.normal_bg,
-            fg=self.normal_fg,
-            activebackground=self.active_bg,
-            activeforeground=self.active_fg
-        )
+        self.configure(bg=self.master.cget("bg"))
+        bg = self.active_bg if self.is_selected else self.normal_bg
+        fg = self.active_fg if self.is_selected else self.normal_fg
+        self.draw_button(bg, fg)
 
 
-def make_eval_namespace(deg_mode=True):
-    """Create custom math namespace resolving DEG/RAD appropriately."""
-    import math
-    
-    def sin_val(x):
-        return math.sin(math.radians(x) if deg_mode else x)
+class SmartMultiCalculator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Smart Multi-Purpose Calculator")
+        self.root.geometry("1024x640")
+        self.root.resizable(False, False)
         
-    def cos_val(x):
-        return math.cos(math.radians(x) if deg_mode else x)
+        self.center_window()
         
-    def tan_val(x):
-        rad = math.radians(x) if deg_mode else x
-        # Handle undefined asymptotes (tan of 90 deg / pi/2 rad)
-        if math.isclose(math.cos(rad), 0, abs_tol=1e-9):
-            raise ValueError("Undefined Tangent")
-        return math.tan(rad)
+        self.current_theme = "dark"
+        self.active_module = "Scientific Calculator"
+        self.expression = ""
+        self.font_scale = 1.0
+        self.history_log = []
         
-    def asin_val(x):
-        val = math.asin(x)
-        return math.degrees(val) if deg_mode else val
-        
-    def acos_val(x):
-        val = math.acos(x)
-        return math.degrees(val) if deg_mode else val
-        
-    def atan_val(x):
-        val = math.atan(x)
-        return math.degrees(val) if deg_mode else val
+        self.load_themes()
+        self.load_icons()
+        self.setup_ui_layout()
+        self.configure_combo_styles()
+        self.rebuild_center()
 
-    def log_val(x):
-        if x <= 0:
-            raise ValueError("Log domain error")
-        return math.log10(x)
+    def center_window(self):
+        self.root.update_idletasks()
+        width = 1024
+        height = 640
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
-    def ln_val(x):
-        if x <= 0:
-            raise ValueError("Ln domain error")
-        return math.log(x)
+    def load_themes(self):
+        self.themes = {
+            "dark": {
+                "bg": "#0B0F19",
+                "sidebar_bg": "#0F172A",
+                "display_bg": "#1E293B",
+                "display_fg": "#FFFFFF",
+                "btn_num_bg": "#1E293B",
+                "btn_num_fg": "#FFFFFF",
+                "btn_num_hover": "#334155",
+                "btn_num_active": "#475569",
+                "btn_op_bg": "#0EA5E9",
+                "btn_op_fg": "#FFFFFF",
+                "btn_op_hover": "#38BDF8",
+                "btn_op_active": "#0284C7",
+                "btn_spec_bg": "#475569",
+                "btn_spec_fg": "#FFFFFF",
+                "btn_spec_hover": "#64748B",
+                "btn_spec_active": "#334155",
+                "btn_eq_bg": "#10B981",
+                "btn_eq_fg": "#FFFFFF",
+                "btn_eq_hover": "#34D399",
+                "btn_eq_active": "#059669",
+            },
+            "light": {
+                "bg": "#F1F5F9",
+                "sidebar_bg": "#E2E8F0",
+                "display_bg": "#FFFFFF",
+                "display_fg": "#0F172A",
+                "btn_num_bg": "#E2E8F0",
+                "btn_num_fg": "#0F172A",
+                "btn_num_hover": "#CBD5E1",
+                "btn_num_active": "#94A3B8",
+                "btn_op_bg": "#3B82F6",
+                "btn_op_fg": "#FFFFFF",
+                "btn_op_hover": "#60A5FA",
+                "btn_op_active": "#2563EB",
+                "btn_spec_bg": "#CBD5E1",
+                "btn_spec_fg": "#0F172A",
+                "btn_spec_hover": "#94A3B8",
+                "btn_spec_active": "#64748B",
+                "btn_eq_bg": "#10B981",
+                "btn_eq_fg": "#FFFFFF",
+                "btn_eq_hover": "#34D399",
+                "btn_eq_active": "#059669",
+            }
+        }
 
-    def sqrt_val(x):
-        if x < 0:
-            raise ValueError("Sqrt domain error")
-        return math.sqrt(x)
+    def load_icons(self):
+        self.icons = {}
+        icon_names = [
+            "basic", "scientific", "finance", "statistical", "retirement",
+            "age", "converter", "health", "history", "settings", "audience", "theme"
+        ]
+        import os
+        icon_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+        for name in icon_names:
+            path = os.path.join(icon_dir, f"{name}.png")
+            if os.path.exists(path):
+                self.icons[name] = tk.PhotoImage(file=path)
+            else:
+                self.icons[name] = None
 
-    def factorial_val(x):
-        if x < 0 or not float(x).is_integer():
-            raise ValueError("Factorial domain error")
-        return math.factorial(int(x))
-
-    return {
-        'sin': sin_val,
-        'cos': cos_val,
-        'tan': tan_val,
-        'asin': asin_val,
-        'acos': acos_val,
-        'atan': atan_val,
-        'log': log_val,
-        'ln': ln_val,
-        'sqrt': sqrt_val,
-        'fact': factorial_val,
-        'pi': math.pi,
-        'e': math.e,
-        'abs': abs,
-        'round': round,
-        'math': math
-    }
-
-
-class SafeEvaluator:
-    """AST-based mathematical expression parser to avoid arbitrary code execution."""
-    ALLOWED_NODES = {
-        ast.Expression,
-        ast.BinOp,
-        ast.UnaryOp,
-        ast.Constant,
-        ast.Name,
-        ast.Call,
-        ast.Load,
-        ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow, ast.USub, ast.UAdd
-    }
-    
-    # Dynamically support legacy ast.Num if present in current python version
-    if hasattr(ast, "Num"):
-        ALLOWED_NODES.add(ast.Num)
-    
-    def __init__(self, namespace):
-        self.namespace = namespace
+    def setup_ui_layout(self):
+        theme = self.themes[self.current_theme]
         
-    def evaluate(self, expr_str):
-        # Human math translation replacements
-        expr_str = expr_str.replace('^', '**')
-        expr_str = expr_str.replace('×', '*')
-        expr_str = expr_str.replace('÷', '/')
-        expr_str = expr_str.replace('π', 'pi')
+        self.left_sidebar = tk.Frame(self.root, bg=theme["sidebar_bg"], width=75)
+        self.left_sidebar.pack(side="left", fill="y")
+        self.left_sidebar.pack_propagate(False)
         
-        # Parse expression to AST
-        tree = ast.parse(expr_str, mode='eval')
+        self.right_sidebar = tk.Frame(self.root, bg=theme["sidebar_bg"], width=75)
+        self.right_sidebar.pack(side="right", fill="y")
+        self.right_sidebar.pack_propagate(False)
         
-        # Verify node security
-        for node in ast.walk(tree):
-            if type(node) not in self.ALLOWED_NODES:
-                raise TypeError(f"Operation {type(node).__name__} is restricted")
-            if isinstance(node, ast.Name):
-                if node.id not in self.namespace:
-                    raise NameError(f"Undefined identifier: {node.id}")
-                    
-        code = compile(tree, '<string>', 'eval')
-        return eval(code, {"__builtins__": {}}, self.namespace)
-
-
-class SmarCalcApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("SmarCalc — Captivating Scientific Calculator")
-        self.geometry("450x640")
-        self.resizable(False, False)
+        self.center_pane = tk.Frame(self.root, bg=theme["bg"])
+        self.center_pane.pack(side="left", fill="both", expand=True)
         
-        self.current_theme_name = "Cyberpunk Neon"
-        self.theme = THEMES[self.current_theme_name]
+        # Stylized Logo Headers (Icons only for narrow layout)
+        logo_frame = tk.Frame(self.left_sidebar, bg=theme["sidebar_bg"])
+        logo_frame.pack(fill="x", pady=(15, 5))
+        tk.Label(logo_frame, text="⚡", font=self.scale_font("Segoe UI", 18, "bold"), bg=theme["sidebar_bg"], fg=theme["btn_op_bg"]).pack()
         
-        self.deg_mode = True
-        self.history = []
+        logo_frame_r = tk.Frame(self.right_sidebar, bg=theme["sidebar_bg"])
+        logo_frame_r.pack(fill="x", pady=(15, 5))
+        tk.Label(logo_frame_r, text="🌐", font=self.scale_font("Segoe UI", 18, "bold"), bg=theme["sidebar_bg"], fg=theme["btn_op_bg"]).pack()
         
-        # Sidebar state (collapsed initially)
-        self.sidebar_open = False
-        self.current_sidebar_tab = "Graph"
+        self.sidebar_buttons = {}
         
-        # Constants database
-        self.constants = [
-            {"name": "Speed of Light", "symbol": "c", "value": "299792458", "unit": "m/s"},
-            {"name": "Planck Constant", "symbol": "h", "value": "6.62607015e-34", "unit": "J·s"},
-            {"name": "Gravitational Const", "symbol": "G", "value": "6.67430e-11", "unit": "m³/kg·s²"},
-            {"name": "Avogadro Number", "symbol": "N_A", "value": "6.02214076e23", "unit": "mol⁻¹"},
-            {"name": "Boltzmann Constant", "symbol": "k_B", "value": "1.380649e-23", "unit": "J/K"},
-            {"name": "Electron Charge", "symbol": "e_q", "value": "1.602176634e-19", "unit": "C"},
-            {"name": "Electron Mass", "symbol": "m_e", "value": "9.1093837e-31", "unit": "kg"},
-            {"name": "Gas Constant", "symbol": "R", "value": "8.314462618", "unit": "J/mol·K"}
+        left_btns = [
+            ("Basic", "Basic Calculator", self.icons.get("basic")),
+            ("Scientific", "Scientific Calculator", self.icons.get("scientific")),
+            ("Finance", "Finance", self.icons.get("finance")),
+            ("Stats", "Statistical", self.icons.get("statistical")),
+            ("Retire", "Retirement Planning", self.icons.get("retirement")),
+            ("Age", "Age Calculator", self.icons.get("age"))
         ]
         
-        # Graph bounds
-        self.xmin, self.xmax = -10.0, 10.0
-        self.ymin, self.ymax = -10.0, 10.0
-        self.canvas_w, self.canvas_h = 330, 360
+        right_btns = [
+            ("Units", "Unit Converter", self.icons.get("converter")),
+            ("Health", "Health Calculator", self.icons.get("health")),
+            ("History", "History", self.icons.get("history")),
+            ("Settings", "Settings", self.icons.get("settings")),
+            ("Audience", "Target Audience", self.icons.get("audience")),
+            ("Theme", "Toggle Theme", self.icons.get("theme"))
+        ]
         
-        # Setup modern ttk styles for combos
+        if self.current_theme == "dark":
+            sidebar_color_theme = {
+                "normal_bg": theme["sidebar_bg"],
+                "hover_bg": "#1E293B",
+                "active_bg": "#334155",
+                "normal_fg": "#94A3B8",
+                "hover_fg": "#FFFFFF",
+                "active_fg": "#FFFFFF"
+            }
+        else:
+            sidebar_color_theme = {
+                "normal_bg": theme["sidebar_bg"],
+                "hover_bg": "#CBD5E1",
+                "active_bg": "#94A3B8",
+                "normal_fg": "#475569",
+                "hover_fg": "#0F172A",
+                "active_fg": "#0F172A"
+            }
+        
+        for disp, internal, icon in left_btns:
+            btn = RoundedButton(
+                self.left_sidebar,
+                text=disp,
+                radius=10,
+                font=self.scale_font("Segoe UI", 8, "bold"),
+                normal_bg=sidebar_color_theme["normal_bg"],
+                hover_bg=sidebar_color_theme["hover_bg"],
+                active_bg=sidebar_color_theme["active_bg"],
+                normal_fg=sidebar_color_theme["normal_fg"],
+                hover_fg=sidebar_color_theme["hover_fg"],
+                active_fg=sidebar_color_theme["active_fg"],
+                image=icon,
+                command=lambda val=internal: self.navigation_click(val),
+                height=60
+            )
+            btn.pack(fill="x", padx=6, pady=4)
+            self.sidebar_buttons[internal] = btn
+            
+        for disp, internal, icon in right_btns:
+            btn = RoundedButton(
+                self.right_sidebar,
+                text=disp,
+                radius=10,
+                font=self.scale_font("Segoe UI", 8, "bold"),
+                normal_bg=sidebar_color_theme["normal_bg"],
+                hover_bg=sidebar_color_theme["hover_bg"],
+                active_bg=sidebar_color_theme["active_bg"],
+                normal_fg=sidebar_color_theme["normal_fg"],
+                hover_fg=sidebar_color_theme["hover_fg"],
+                active_fg=sidebar_color_theme["active_fg"],
+                image=icon,
+                command=lambda val=internal: self.navigation_click(val),
+                height=60
+            )
+            btn.pack(fill="x", padx=6, pady=4)
+            self.sidebar_buttons[internal] = btn
+
+    def configure_combo_styles(self):
+        theme = self.themes[self.current_theme]
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Layout container
-        self.main_container = tk.Frame(self, bg=self.theme["bg"])
-        self.main_container.pack(fill="both", expand=True)
-        
-        # Left Panel (Calculator Pane)
-        self.calc_pane = tk.Frame(self.main_container, bg=self.theme["bg"], width=450)
-        self.calc_pane.pack(side="left", fill="both")
-        
-        # Right Panel (Sidebar Pane)
-        self.sidebar_pane = tk.Frame(self.main_container, bg=self.theme["sidebar_bg"], width=350)
-        # Packed dynamically when sidebar toggles
-        
-        self.build_calc_ui()
-        self.build_sidebar_ui()
-        self.apply_theme()
-        
-        # Bind keyboard shortcuts
-        self.bind_keys()
-        
-    def build_calc_ui(self):
-        # Header Controls
-        header = tk.Frame(self.calc_pane, bg=self.theme["bg"], height=40)
-        header.pack(fill="x", padx=15, pady=(15, 5))
-        header.pack_propagate(False)
-        
-        self.app_title = tk.Label(
-            header, text="SmarCalc", font=("Segoe UI", 16, "bold"),
-            bg=self.theme["bg"], fg=self.theme["accent"]
+        self.style.configure(
+            "TCombobox",
+            fieldbackground=theme["display_bg"],
+            background=theme["btn_num_bg"],
+            foreground=theme["display_fg"],
+            arrowcolor=theme["display_fg"],
+            bordercolor=theme["bg"],
+            lightcolor=theme["bg"],
+            darkcolor=theme["bg"]
         )
-        self.app_title.pack(side="left")
         
-        # Theme dropdown
-        self.theme_var = tk.StringVar(value=self.current_theme_name)
-        theme_combo = ttk.Combobox(
-            header, textvariable=self.theme_var, values=list(THEMES.keys()),
-            state="readonly", width=14
-        )
-        theme_combo.pack(side="right", padx=5)
-        theme_combo.bind("<<ComboboxSelected>>", self.on_theme_select)
-        
-        # Sidebar togglers
-        self.toggle_btn = HoverButton(
-            header, text="☰ Tools", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["accent"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=self.toggle_sidebar, width=8, height=1
-        )
-        self.toggle_btn.pack(side="right", padx=5)
-        
-        # Displays Frame
-        displays = tk.Frame(self.calc_pane, bg=self.theme["display_bg"], relief="flat", bd=0)
-        displays.pack(fill="x", padx=15, pady=10)
-        
-        # Expression formula bar
-        self.expr_var = tk.StringVar()
-        self.expr_entry = tk.Entry(
-            displays, textvariable=self.expr_var, font=("Consolas", 14),
-            bg=self.theme["display_bg"], fg=self.theme["text_secondary"],
-            bd=0, highlightthickness=0, insertbackground=self.theme["text"]
-        )
-        self.expr_entry.pack(fill="x", padx=15, pady=(15, 2))
-        self.expr_entry.focus()
-        
-        # Large results label
-        self.result_var = tk.StringVar(value="0")
-        self.result_label = tk.Label(
-            displays, textvariable=self.result_var, font=("Segoe UI", 28, "bold"),
-            bg=self.theme["display_bg"], fg=self.theme["text"], anchor="e"
-        )
-        self.result_label.pack(fill="x", padx=15, pady=(2, 15))
-        
-        # Status Bar (Deg/Rad)
-        self.status_frame = tk.Frame(self.calc_pane, bg=self.theme["bg"])
-        self.status_frame.pack(fill="x", padx=15, pady=(0, 5))
-        
-        self.mode_label = tk.Label(
-            self.status_frame, text="DEG", font=("Segoe UI", 8, "bold"),
-            bg=self.theme["num_bg"], fg=self.theme["accent"], padx=6, pady=2
-        )
-        self.mode_label.pack(side="left")
-        
-        # Keypad Layout
-        # Buttons are defined as (text, row, col, type, [action])
-        # Types: 'num' (numbers, variables), 'op' (standard operations), 'spec' (eval, backspace, clear)
-        buttons_def = [
-            # Row 0
-            ("DEG/RAD", 0, 0, "op", self.toggle_deg_rad),
-            ("C", 0, 1, "spec", self.clear_expr),
-            ("⌫", 0, 2, "spec", self.backspace_expr),
-            ("(", 0, 3, "op", lambda: self.insert_text("(")),
-            (")", 0, 4, "op", lambda: self.insert_text(")")),
-            ("^", 0, 5, "op", lambda: self.insert_text("^")),
-            
-            # Row 1
-            ("sin", 1, 0, "op", lambda: self.insert_text("sin(")),
-            ("cos", 1, 1, "op", lambda: self.insert_text("cos(")),
-            ("tan", 1, 2, "op", lambda: self.insert_text("tan(")),
-            ("7", 1, 3, "num", lambda: self.insert_text("7")),
-            ("8", 1, 4, "num", lambda: self.insert_text("8")),
-            ("9", 1, 5, "num", lambda: self.insert_text("9")),
-            
-            # Row 2
-            ("asin", 2, 0, "op", lambda: self.insert_text("asin(")),
-            ("acos", 2, 1, "op", lambda: self.insert_text("acos(")),
-            ("atan", 2, 2, "op", lambda: self.insert_text("atan(")),
-            ("4", 2, 3, "num", lambda: self.insert_text("4")),
-            ("5", 2, 4, "num", lambda: self.insert_text("5")),
-            ("6", 2, 5, "num", lambda: self.insert_text("6")),
-            
-            # Row 3
-            ("log", 3, 0, "op", lambda: self.insert_text("log(")),
-            ("ln", 3, 1, "op", lambda: self.insert_text("ln(")),
-            ("sqrt", 3, 2, "op", lambda: self.insert_text("sqrt(")),
-            ("1", 3, 3, "num", lambda: self.insert_text("1")),
-            ("2", 3, 4, "num", lambda: self.insert_text("2")),
-            ("3", 3, 5, "num", lambda: self.insert_text("3")),
-            
-            # Row 4
-            ("π", 4, 0, "num", lambda: self.insert_text("π")),
-            ("e", 4, 1, "num", lambda: self.insert_text("e")),
-            ("!", 4, 2, "op", lambda: self.insert_text("fact(")),
-            ("0", 4, 3, "num", lambda: self.insert_text("0")),
-            (".", 4, 4, "num", lambda: self.insert_text(".")),
-            ("=", 4, 5, "spec", self.evaluate_expr),
-            
-            # Row 5
-            ("÷", 5, 0, "op", lambda: self.insert_text("÷")),
-            ("×", 5, 1, "op", lambda: self.insert_text("×")),
-            ("-", 5, 2, "op", lambda: self.insert_text("-")),
-            ("+", 5, 3, "op", lambda: self.insert_text("+")),
-            ("%", 5, 4, "op", lambda: self.insert_text("%")),
-            ("mod", 5, 5, "op", lambda: self.insert_text(" % "))
-        ]
-        
-        self.keypad_frame = tk.Frame(self.calc_pane, bg=self.theme["bg"])
-        self.keypad_frame.pack(fill="both", expand=True, padx=15, pady=(5, 15))
-        
-        # Configure columns/rows weight
-        for i in range(6):
-            self.keypad_frame.columnconfigure(i, weight=1)
-        for i in range(6):
-            self.keypad_frame.rowconfigure(i, weight=1)
-            
-        self.buttons = {}
-        for btn_def in buttons_def:
-            text, r, c, b_type, action = btn_def
-            
-            # Determine color set based on type
-            if b_type == "num":
-                nbg, hbg, abg = self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"]
-                nfg, hfg, afg = self.theme["num_fg"], self.theme["active_fg"], self.theme["active_fg"]
-            elif b_type == "op":
-                nbg, hbg, abg = self.theme["op_bg"], self.theme["op_hover"], self.theme["num_hover"]
-                nfg, hfg, afg = self.theme["op_fg"], self.theme["active_fg"], self.theme["active_fg"]
-            else:  # spec
-                nbg, hbg, abg = self.theme["spec_bg"], self.theme["spec_hover"], self.theme["num_hover"]
-                nfg, hfg, afg = self.theme["spec_fg"], self.theme["active_fg"], self.theme["active_fg"]
-                
-            btn = HoverButton(
-                self.keypad_frame, text=text, font=("Segoe UI", 12, "bold"),
-                normal_bg=nbg, hover_bg=hbg, active_bg=abg,
-                normal_fg=nfg, hover_fg=hfg, active_fg=afg,
-                command=action
-            )
-            btn.grid(row=r, column=c, sticky="nsew", padx=3, pady=3)
-            self.buttons[text] = btn
+        self.root.option_add("*TCombobox*Listbox.background", theme["display_bg"])
+        self.root.option_add("*TCombobox*Listbox.foreground", theme["display_fg"])
+        self.root.option_add("*TCombobox*Listbox.selectBackground", theme["btn_op_bg"])
+        self.root.option_add("*TCombobox*Listbox.selectForeground", theme["btn_op_fg"])
 
-    def build_sidebar_ui(self):
-        # Sidebar tabs switcher
-        self.sidebar_header = tk.Frame(self.sidebar_pane, bg=self.theme["sidebar_bg"], height=40)
-        self.sidebar_header.pack(fill="x", padx=10, pady=(15, 5))
-        self.sidebar_header.pack_propagate(False)
-        
-        tabs = [("Graph", "📈"), ("Convert", "🔄"), ("Const", "⚛"), ("History", "📜")]
-        self.tab_buttons = {}
-        
-        for name, icon in tabs:
-            btn = HoverButton(
-                self.sidebar_header, text=f"{icon} {name}", font=("Segoe UI", 8, "bold"),
-                normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-                normal_fg=self.theme["text_secondary"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-                command=lambda n=name: self.switch_sidebar_tab(n)
-            )
-            btn.pack(side="left", fill="both", expand=True, padx=1)
-            self.tab_buttons[name] = btn
-            
-        # Display Panel Container
-        self.sidebar_content = tk.Frame(self.sidebar_pane, bg=self.theme["sidebar_bg"])
-        self.sidebar_content.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        # Build individual tabs
-        self.build_graph_tab()
-        self.build_convert_tab()
-        self.build_constants_tab()
-        self.build_history_tab()
-        
-    def build_graph_tab(self):
-        self.graph_tab_frame = tk.Frame(self.sidebar_content, bg=self.theme["sidebar_bg"])
-        
-        # Instructions/Controls frame
-        ctrl_frame = tk.Frame(self.graph_tab_frame, bg=self.theme["sidebar_bg"])
-        ctrl_frame.pack(fill="x", pady=5)
-        
-        tk.Label(ctrl_frame, text="y = ", font=("Consolas", 12, "bold"), bg=self.theme["sidebar_bg"], fg=self.theme["text"]).pack(side="left")
-        
-        self.graph_expr_entry = tk.Entry(
-            ctrl_frame, font=("Consolas", 12), bg=self.theme["display_bg"], fg=self.theme["text"],
-            bd=0, highlightthickness=0, insertbackground=self.theme["text"]
-        )
-        self.graph_expr_entry.pack(side="left", fill="x", expand=True, padx=5)
-        self.graph_expr_entry.insert(0, "sin(x)")
-        
-        self.plot_btn = HoverButton(
-            ctrl_frame, text="Plot", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["spec_bg"], hover_bg=self.theme["spec_hover"], active_bg=self.theme["num_bg"],
-            normal_fg=self.theme["spec_fg"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=self.draw_graph, width=6
-        )
-        self.plot_btn.pack(side="right")
-        
-        # Canvas representation of cartesian plane
-        self.graph_canvas = tk.Canvas(
-            self.graph_tab_frame, bg=self.theme["display_bg"], width=self.canvas_w, height=self.canvas_h,
-            bd=0, highlightthickness=0
-        )
-        self.graph_canvas.pack(fill="both", expand=True, pady=5)
-        
-        # Zoom & Reset Controls at the bottom
-        btns_frame = tk.Frame(self.graph_tab_frame, bg=self.theme["sidebar_bg"])
-        btns_frame.pack(fill="x", pady=(2, 10))
-        
-        self.zoom_in_btn = HoverButton(
-            btns_frame, text="🔍 +", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["text"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=lambda: self.zoom_at(self.canvas_w/2, self.canvas_h/2, 0.7), width=6
-        )
-        self.zoom_in_btn.pack(side="left", padx=2, expand=True, fill="x")
-        
-        self.zoom_out_btn = HoverButton(
-            btns_frame, text="🔍 -", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["text"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=lambda: self.zoom_at(self.canvas_w/2, self.canvas_h/2, 1.4), width=6
-        )
-        self.zoom_out_btn.pack(side="left", padx=2, expand=True, fill="x")
-        
-        self.reset_graph_btn = HoverButton(
-            btns_frame, text="Reset", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["text"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=self.reset_graph, width=6
-        )
-        self.reset_graph_btn.pack(side="left", padx=2, expand=True, fill="x")
-        
-        # Bind Drag-to-Pan and Scroll-to-Zoom
-        self.graph_canvas.bind("<Button-1>", self.start_pan)
-        self.graph_canvas.bind("<B1-Motion>", self.drag_pan)
-        self.graph_canvas.bind("<MouseWheel>", self.zoom_wheel)
-        
-        # Error Label
-        self.graph_error_lbl = tk.Label(self.graph_tab_frame, text="", font=("Segoe UI", 9, "italic"), bg=self.theme["sidebar_bg"], fg="#FF3333")
-        self.graph_error_lbl.pack(fill="x")
-        
-        # Display by default inside container
-        self.graph_tab_frame.pack(fill="both", expand=True)
-
-    def build_convert_tab(self):
-        self.convert_tab_frame = tk.Frame(self.sidebar_content, bg=self.theme["sidebar_bg"])
-        
-        # Unit Categories
-        cat_frame = tk.Frame(self.convert_tab_frame, bg=self.theme["sidebar_bg"])
-        cat_frame.pack(fill="x", pady=10)
-        
-        tk.Label(cat_frame, text="Category:", font=("Segoe UI", 10, "bold"), bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]).pack(anchor="w")
-        
-        self.conv_categories = {
-            "Length": ["Meter (m)", "Kilometer (km)", "Mile (mi)", "Foot (ft)", "Inch (in)"],
-            "Mass": ["Kilogram (kg)", "Gram (g)", "Pound (lb)", "Ounce (oz)"],
-            "Temperature": ["Celsius (°C)", "Fahrenheit (°F)", "Kelvin (K)"],
-            "Angle": ["Degree (°)", "Radian (rad)"]
-        }
-        
-        self.conv_cat_var = tk.StringVar(value="Length")
-        self.conv_cat_combo = ttk.Combobox(
-            cat_frame, textvariable=self.conv_cat_var, values=list(self.conv_categories.keys()),
-            state="readonly"
-        )
-        self.conv_cat_combo.pack(fill="x", pady=2)
-        self.conv_cat_combo.bind("<<ComboboxSelected>>", self.on_conv_cat_change)
-        
-        # From Frame
-        from_frame = tk.Frame(self.convert_tab_frame, bg=self.theme["sidebar_bg"])
-        from_frame.pack(fill="x", pady=10)
-        
-        tk.Label(from_frame, text="From:", font=("Segoe UI", 9, "bold"), bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]).pack(anchor="w")
-        self.conv_from_var = tk.StringVar()
-        self.conv_from_combo = ttk.Combobox(from_frame, textvariable=self.conv_from_var, state="readonly")
-        self.conv_from_combo.pack(fill="x", pady=2)
-        self.conv_from_combo.bind("<<ComboboxSelected>>", lambda e: self.perform_conversion())
-        
-        self.conv_input_var = tk.StringVar(value="1")
-        self.conv_input_entry = tk.Entry(
-            from_frame, textvariable=self.conv_input_var, font=("Consolas", 14),
-            bg=self.theme["display_bg"], fg=self.theme["text"], bd=0, highlightthickness=0, insertbackground=self.theme["text"]
-        )
-        self.conv_input_entry.pack(fill="x", pady=5, ipady=5)
-        self.conv_input_var.trace_add("write", lambda *args: self.perform_conversion())
-        
-        # Swap Button
-        swap_frame = tk.Frame(self.convert_tab_frame, bg=self.theme["sidebar_bg"])
-        swap_frame.pack(fill="x")
-        self.swap_units_btn = HoverButton(
-            swap_frame, text="⇅ Swap", font=("Segoe UI", 9, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["accent"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=self.swap_units, width=10
-        )
-        self.swap_units_btn.pack(anchor="center")
-        
-        # To Frame
-        to_frame = tk.Frame(self.convert_tab_frame, bg=self.theme["sidebar_bg"])
-        to_frame.pack(fill="x", pady=10)
-        
-        tk.Label(to_frame, text="To:", font=("Segoe UI", 9, "bold"), bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]).pack(anchor="w")
-        self.conv_to_var = tk.StringVar()
-        self.conv_to_combo = ttk.Combobox(to_frame, textvariable=self.conv_to_var, state="readonly")
-        self.conv_to_combo.pack(fill="x", pady=2)
-        self.conv_to_combo.bind("<<ComboboxSelected>>", lambda e: self.perform_conversion())
-        
-        self.conv_result_var = tk.StringVar(value="1")
-        self.conv_result_lbl = tk.Label(
-            to_frame, textvariable=self.conv_result_var, font=("Segoe UI", 16, "bold"),
-            bg=self.theme["display_bg"], fg=self.theme["accent"], anchor="w"
-        )
-        self.conv_result_lbl.pack(fill="x", pady=5, ipady=5, padx=5)
-        
-        # Set initial drop items
-        self.on_conv_cat_change(None)
-
-    def build_constants_tab(self):
-        self.constants_tab_frame = tk.Frame(self.sidebar_content, bg=self.theme["sidebar_bg"])
-        
-        # Title
-        tk.Label(
-            self.constants_tab_frame, text="Physical & Math Constants", font=("Segoe UI", 10, "bold"),
-            bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]
-        ).pack(anchor="w", pady=(5, 10))
-        
-        # Scrollable Canvas
-        const_canvas = tk.Canvas(self.constants_tab_frame, bg=self.theme["sidebar_bg"], bd=0, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.constants_tab_frame, orient="vertical", command=const_canvas.yview)
-        
-        self.const_scroll_frame = tk.Frame(const_canvas, bg=self.theme["sidebar_bg"])
-        self.const_scroll_frame.bind(
-            "<Configure>",
-            lambda e: const_canvas.configure(scrollregion=const_canvas.bbox("all"))
-        )
-        
-        const_canvas.create_window((0, 0), window=self.const_scroll_frame, anchor="nw", width=310)
-        const_canvas.configure(yscrollcommand=scrollbar.set)
-        
-        scrollbar.pack(side="right", fill="y")
-        const_canvas.pack(side="left", fill="both", expand=True)
-        
-        # Bind scrolling on mouse hover
-        def _on_mousewheel(event):
-            const_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        const_canvas.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e) if self.current_sidebar_tab == "Const" else None)
-        
-        # Populate Constants cards
-        for c in self.constants:
-            card = tk.Frame(self.const_scroll_frame, bg=self.theme["display_bg"], padx=10, pady=8)
-            card.pack(fill="x", pady=4)
-            
-            lbl_title = tk.Label(card, text=c["name"], font=("Segoe UI", 9, "bold"), bg=self.theme["display_bg"], fg=self.theme["text"])
-            lbl_title.pack(anchor="nw")
-            
-            det_frame = tk.Frame(card, bg=self.theme["display_bg"])
-            det_frame.pack(fill="x", pady=(2, 0))
-            
-            lbl_val = tk.Label(
-                det_frame, text=f"{c['symbol']} = {c['value']} {c['unit']}",
-                font=("Consolas", 8), bg=self.theme["display_bg"], fg=self.theme["text_secondary"]
-            )
-            lbl_val.pack(side="left")
-            
-            btn_ins = HoverButton(
-                det_frame, text="Insert", font=("Segoe UI", 7, "bold"),
-                normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-                normal_fg=self.theme["accent"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-                command=lambda v=c['value']: self.insert_constant(v), width=6
-            )
-            btn_ins.pack(side="right")
-
-    def build_history_tab(self):
-        self.history_tab_frame = tk.Frame(self.sidebar_content, bg=self.theme["sidebar_bg"])
-        
-        # Header / Clear Controls
-        header = tk.Frame(self.history_tab_frame, bg=self.theme["sidebar_bg"])
-        header.pack(fill="x", pady=5)
-        
-        tk.Label(
-            header, text="Calculation History", font=("Segoe UI", 10, "bold"),
-            bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]
-        ).pack(side="left", anchor="w")
-        
-        self.clear_hist_btn = HoverButton(
-            header, text="Clear", font=("Segoe UI", 8, "bold"),
-            normal_bg=self.theme["num_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-            normal_fg=self.theme["accent"], hover_fg=self.theme["active_fg"], active_fg=self.theme["active_fg"],
-            command=self.clear_history, width=6
-        )
-        self.clear_hist_btn.pack(side="right")
-        
-        # Scrollable Canvas for History Logs
-        self.hist_canvas = tk.Canvas(self.history_tab_frame, bg=self.theme["sidebar_bg"], bd=0, highlightthickness=0)
-        hist_scrollbar = ttk.Scrollbar(self.history_tab_frame, orient="vertical", command=self.hist_canvas.yview)
-        
-        self.hist_scroll_frame = tk.Frame(self.hist_canvas, bg=self.theme["sidebar_bg"])
-        self.hist_scroll_frame.bind(
-            "<Configure>",
-            lambda e: self.hist_canvas.configure(scrollregion=self.hist_canvas.bbox("all"))
-        )
-        
-        self.hist_canvas.create_window((0, 0), window=self.hist_scroll_frame, anchor="nw", width=310)
-        self.hist_canvas.configure(yscrollcommand=hist_scrollbar.set)
-        
-        hist_scrollbar.pack(side="right", fill="y")
-        self.hist_canvas.pack(side="left", fill="both", expand=True)
-        
-        self.update_history_display()
-
-    # --- UI Logic / Tab Switcher ---
-    def switch_sidebar_tab(self, tab_name):
-        self.current_sidebar_tab = tab_name
-        
-        # Pack-forget all frames
-        self.graph_tab_frame.pack_forget()
-        self.convert_tab_frame.pack_forget()
-        self.constants_tab_frame.pack_forget()
-        self.history_tab_frame.pack_forget()
-        
-        # Restore desired tab
-        if tab_name == "Graph":
-            self.graph_tab_frame.pack(fill="both", expand=True)
-            self.draw_graph()
-        elif tab_name == "Convert":
-            self.convert_tab_frame.pack(fill="both", expand=True)
-        elif tab_name == "Const":
-            self.constants_tab_frame.pack(fill="both", expand=True)
-        elif tab_name == "History":
-            self.history_tab_frame.pack(fill="both", expand=True)
-            self.update_history_display()
-            
-        # Visual tab highlights
-        for name, btn in self.tab_buttons.items():
-            if name == tab_name:
-                btn.configure(bg=self.theme["accent"], fg=self.theme["active_fg"])
-                btn.update_colors(
-                    self.theme["accent"], self.theme["accent"], self.theme["op_hover"],
-                    self.theme["active_fg"], self.theme["active_fg"], self.theme["active_fg"]
-                )
-            else:
-                btn.configure(bg=self.theme["num_bg"], fg=self.theme["text_secondary"])
-                btn.update_colors(
-                    self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-                    self.theme["text_secondary"], self.theme["active_fg"], self.theme["active_fg"]
-                )
-
-    def toggle_sidebar(self):
-        if self.sidebar_open:
-            # Collapse
-            self.sidebar_pane.pack_forget()
-            self.geometry("450x640")
-            self.sidebar_open = False
-        else:
-            # Expand
-            self.sidebar_pane.pack(side="right", fill="both", expand=True)
-            self.geometry("800x640")
-            self.sidebar_open = True
-            self.switch_sidebar_tab(self.current_sidebar_tab)
-
-    # --- Calculations Engine ---
-    def insert_text(self, text):
-        # If display says "Error", clear it first
-        if self.result_var.get().startswith("Error"):
-            self.result_var.set("0")
-            
-        curr_pos = self.expr_entry.index(tk.INSERT)
-        self.expr_entry.insert(curr_pos, text)
-        self.expr_entry.focus()
-        
-    def clear_expr(self):
-        self.expr_var.set("")
-        self.result_var.set("0")
-        
-    def backspace_expr(self):
-        if self.result_var.get().startswith("Error"):
-            self.result_var.set("0")
-            
-        curr_pos = self.expr_entry.index(tk.INSERT)
-        if curr_pos > 0:
-            self.expr_entry.delete(curr_pos - 1, curr_pos)
-            
-    def toggle_deg_rad(self):
-        self.deg_mode = not self.deg_mode
-        self.mode_label.configure(text="DEG" if self.deg_mode else "RAD")
-        # Recalculate current expression if exists
-        if self.expr_var.get():
-            self.evaluate_expr()
-
-    def evaluate_expr(self):
-        expr = self.expr_var.get().strip()
-        if not expr:
+    def navigation_click(self, target):
+        if target == "Toggle Theme":
+            self.toggle_theme()
             return
-            
-        # Standard balance validation for parentheses
-        open_b = expr.count('(')
-        close_b = expr.count(')')
-        if open_b > close_b:
-            expr += ')' * (open_b - close_b)
-            self.expr_var.set(expr)
-            
-        try:
-            ns = make_eval_namespace(deg_mode=self.deg_mode)
-            evaluator = SafeEvaluator(ns)
-            res = evaluator.evaluate(expr)
-            
-            # Format float decimals beautifully
-            if isinstance(res, float):
-                if res.is_integer():
-                    res = int(res)
-                else:
-                    # Truncate to maximum 8 decimals for presentation precision
-                    res = round(res, 8)
-                    
-            res_str = str(res)
-            self.result_var.set(res_str)
-            
-            # Add to history log list
-            self.add_history(expr, res_str)
-            
-        except ZeroDivisionError:
-            self.result_var.set("Error: Division by zero")
-        except ValueError as ve:
-            self.result_var.set(f"Error: {str(ve)}")
-        except Exception:
-            self.result_var.set("Error: Invalid Syntax")
+        
+        self.active_module = target
+        self.rebuild_center()
 
-    def insert_constant(self, val):
-        self.insert_text(val)
+    def update_sidebar_highlights(self):
+        for name, btn in self.sidebar_buttons.items():
+            btn.set_selected(name == self.active_module)
+
+    def toggle_theme(self):
+        self.current_theme = "light" if self.current_theme == "dark" else "dark"
+        theme = self.themes[self.current_theme]
         
-    # --- History Handling ---
-    def add_history(self, expr, result):
-        # Deduplicate sequential identical entries
-        if self.history and self.history[-1] == (expr, result):
-            return
-        self.history.append((expr, result))
-        if len(self.history) > 30: # Limit size
-            self.history.pop(0)
-        self.update_history_display()
+        self.left_sidebar.configure(bg=theme["sidebar_bg"])
+        self.right_sidebar.configure(bg=theme["sidebar_bg"])
         
-    def clear_history(self):
-        self.history.clear()
-        self.update_history_display()
+        self.left_sidebar.destroy()
+        self.right_sidebar.destroy()
+        self.center_pane.destroy()
         
-    def update_history_display(self):
-        # Clear old rows in canvas frame
-        for widget in self.hist_scroll_frame.winfo_children():
+        self.setup_ui_layout()
+        self.configure_combo_styles()
+        self.rebuild_center()
+
+    def get_category_colors(self, category, theme):
+        if category == "num":
+            return {
+                "normal_bg": theme["btn_num_bg"],
+                "hover_bg": theme["btn_num_hover"],
+                "active_bg": theme["btn_num_active"],
+                "normal_fg": theme["btn_num_fg"],
+                "hover_fg": theme["btn_num_fg"],
+                "active_fg": theme["btn_num_fg"]
+            }
+        elif category == "op":
+            return {
+                "normal_bg": theme["btn_op_bg"],
+                "hover_bg": theme["btn_op_hover"],
+                "active_bg": theme["btn_op_active"],
+                "normal_fg": theme["btn_op_fg"],
+                "hover_fg": theme["btn_op_fg"],
+                "active_fg": theme["btn_op_fg"]
+            }
+        elif category == "eq":
+            return {
+                "normal_bg": theme["btn_eq_bg"],
+                "hover_bg": theme["btn_eq_hover"],
+                "active_bg": theme["btn_eq_active"],
+                "normal_fg": theme["btn_eq_fg"],
+                "hover_fg": theme["btn_eq_fg"],
+                "active_fg": theme["btn_eq_fg"]
+            }
+        else:  # spec
+            return {
+                "normal_bg": theme["btn_spec_bg"],
+                "hover_bg": theme["btn_spec_hover"],
+                "active_bg": theme["btn_spec_active"],
+                "normal_fg": theme["btn_spec_fg"],
+                "hover_fg": theme["btn_spec_fg"],
+                "active_fg": theme["btn_spec_fg"]
+            }
+
+    def scale_font(self, font_name, size, weight="normal"):
+        return (font_name, int(size * self.font_scale), weight)
+
+    def add_history(self, expression, result):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.history_log.append({
+            "time": timestamp,
+            "expr": expression,
+            "res": result
+        })
+
+    def draw_center_header(self, title):
+        theme = self.themes[self.current_theme]
+        lbl = tk.Label(self.center_pane, text=title, font=self.scale_font("Segoe UI", 18, "bold"), bg=theme["bg"], fg=theme["btn_op_bg"])
+        lbl.pack(pady=(12, 4))
+        divider = tk.Frame(self.center_pane, height=1, bg=theme["btn_num_bg"] if self.current_theme == "dark" else "#CBD5E1")
+        divider.pack(fill="x", padx=45, pady=(2, 10))
+
+    def rebuild_center(self):
+        for widget in self.center_pane.winfo_children():
             widget.destroy()
             
-        if not self.history:
-            lbl = tk.Label(
-                self.hist_scroll_frame, text="No previous calculations", font=("Segoe UI", 9, "italic"),
-                bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"]
-            )
-            lbl.pack(pady=20)
-            return
+        theme = self.themes[self.current_theme]
+        self.center_pane.configure(bg=theme["bg"])
+        
+        if self.active_module == "Basic Calculator":
+            self.build_basic_calc()
+        elif self.active_module == "Scientific Calculator":
+            self.build_scientific_calc()
+        elif self.active_module == "Finance":
+            self.build_finance()
+        elif self.active_module == "Statistical":
+            self.build_statistical()
+        elif self.active_module == "Retirement Planning":
+            self.build_retirement()
+        elif self.active_module == "Age Calculator":
+            self.build_age_calc()
+        elif self.active_module == "Unit Converter":
+            self.build_unit_conv()
+        elif self.active_module == "Health Calculator":
+            self.build_health()
+        elif self.active_module == "History":
+            self.build_history()
+        elif self.active_module == "Settings":
+            self.build_settings()
+        elif self.active_module == "Target Audience":
+            self.build_target_audience()
             
-        # Reverse history to show newest on top
-        for expr, result in reversed(self.history):
-            card = tk.Frame(self.hist_scroll_frame, bg=self.theme["display_bg"], padx=10, pady=8)
-            card.pack(fill="x", pady=3)
-            
-            btn_expr = HoverButton(
-                card, text=expr, font=("Consolas", 9), anchor="w",
-                normal_bg=self.theme["display_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-                normal_fg=self.theme["text_secondary"], hover_fg=self.theme["accent"], active_fg=self.theme["active_fg"],
-                command=lambda e=expr: self.expr_var.set(e)
-            )
-            btn_expr.pack(fill="x", anchor="w")
-            
-            btn_res = HoverButton(
-                card, text=f"= {result}", font=("Segoe UI", 10, "bold"), anchor="w",
-                normal_bg=self.theme["display_bg"], hover_bg=self.theme["num_hover"], active_bg=self.theme["op_hover"],
-                normal_fg=self.theme["text"], hover_fg=self.theme["accent"], active_fg=self.theme["active_fg"],
-                command=lambda r=result: self.insert_text(r)
-            )
-            btn_res.pack(fill="x", anchor="w", pady=(2, 0))
+        self.update_sidebar_highlights()
 
-    # --- 2D Interactive Function Grapher Engine ---
-    def reset_graph(self):
-        self.xmin, self.xmax = -10.0, 10.0
-        self.ymin, self.ymax = -10.0, 10.0
-        self.draw_graph()
+    # --- Module: Basic Calculator ---
+    def build_basic_calc(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Basic Calculator")
         
-    def to_screen(self, x, y):
-        sx = self.canvas_w * (x - self.xmin) / (self.xmax - self.xmin)
-        sy = self.canvas_h * (self.ymax - y) / (self.ymax - self.ymin)
-        return sx, sy
+        disp_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], height=80, bd=0, relief="flat", highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        disp_frame.pack(fill="x", padx=40, pady=5)
+        disp_frame.pack_propagate(False)
         
-    def to_math(self, sx, sy):
-        mx = self.xmin + (sx / self.canvas_w) * (self.xmax - self.xmin)
-        my = self.ymax - (sy / self.canvas_h) * (self.ymax - self.ymin)
-        return mx, my
-
-    def draw_graph(self):
-        self.graph_canvas.delete("all")
-        self.graph_error_lbl.configure(text="")
-        
-        # Grid steps logic based on bounds size
-        span_x = self.xmax - self.xmin
-        if span_x <= 0:
-            return
-            
-        # Determine grid step magnitude
-        order = math.floor(math.log10(span_x))
-        grid_step = 10**order
-        if span_x / grid_step < 3:
-            grid_step /= 5
-        elif span_x / grid_step < 6:
-            grid_step /= 2
-            
-        # Draw dynamic horizontal & vertical grids
-        start_x = math.floor(self.xmin / grid_step) * grid_step
-        while start_x <= self.xmax:
-            sx, _ = self.to_screen(start_x, 0)
-            self.graph_canvas.create_line(sx, 0, sx, self.canvas_h, fill=self.theme["grid_color"], width=1)
-            # Label
-            if not math.isclose(start_x, 0, abs_tol=1e-10):
-                self.graph_canvas.create_text(
-                    sx, self.canvas_h - 10, text=f"{round(start_x, 4):g}",
-                    fill=self.theme["text_secondary"], font=("Segoe UI", 7)
-                )
-            start_x += grid_step
-            
-        start_y = math.floor(self.ymin / grid_step) * grid_step
-        while start_y <= self.ymax:
-            _, sy = self.to_screen(0, start_y)
-            self.graph_canvas.create_line(0, sy, self.canvas_w, sy, fill=self.theme["grid_color"], width=1)
-            # Label
-            if not math.isclose(start_y, 0, abs_tol=1e-10):
-                self.graph_canvas.create_text(
-                    12, sy, text=f"{round(start_y, 4):g}",
-                    fill=self.theme["text_secondary"], font=("Segoe UI", 7), anchor="w"
-                )
-            start_y += grid_step
-
-        # Draw main axis lines
-        sx_axis, sy_axis = self.to_screen(0, 0)
-        # Vertical axis line
-        if 0 <= sx_axis <= self.canvas_w:
-            self.graph_canvas.create_line(sx_axis, 0, sx_axis, self.canvas_h, fill=self.theme["accent"], width=1.5)
-        # Horizontal axis line
-        if 0 <= sy_axis <= self.canvas_h:
-            self.graph_canvas.create_line(0, sy_axis, self.canvas_w, sy_axis, fill=self.theme["accent"], width=1.5)
-            
-        # Plot equation points
-        self.draw_function()
-        
-    def draw_function(self):
-        expr = self.graph_expr_entry.get().strip()
-        if not expr:
-            return
-            
-        # Pre-compile variables
-        ns = make_eval_namespace(deg_mode=False) # Graphing plotted standard in radians
-        
-        points = []
-        steps = 400
-        
-        # Parse expressions safely
-        for i in range(steps + 1):
-            sx = (i / steps) * self.canvas_w
-            x_math, _ = self.to_math(sx, 0)
-            
-            ns['x'] = x_math
-            try:
-                evaluator = SafeEvaluator(ns)
-                y_math = evaluator.evaluate(expr)
-                
-                if isinstance(y_math, complex):
-                    y_math = y_math.real
-                if math.isnan(y_math) or math.isinf(y_math):
-                    raise ValueError()
-                    
-                _, sy = self.to_screen(x_math, y_math)
-                
-                # Check for canvas clipping limits
-                if -200 <= sy <= self.canvas_h + 200:
-                    points.append((sx, sy))
-                else:
-                    if len(points) > 1:
-                        self.graph_canvas.create_line(points, fill=self.theme["spec_bg"], width=2.5, tags="function")
-                    points = []
-            except Exception:
-                if len(points) > 1:
-                    self.graph_canvas.create_line(points, fill=self.theme["spec_bg"], width=2.5, tags="function")
-                points = []
-                
-        if len(points) > 1:
-            self.graph_canvas.create_line(points, fill=self.theme["spec_bg"], width=2.5, tags="function")
-            
-        # Display validation notice
-        # Test math parsing once to catch typing errors
-        ns['x'] = 1.0
-        try:
-            evaluator = SafeEvaluator(ns)
-            evaluator.evaluate(expr)
-        except Exception as ex:
-            self.graph_error_lbl.configure(text=f"Formula error: {str(ex)}")
-
-    def start_pan(self, event):
-        self.pan_start_x = event.x
-        self.pan_start_y = event.y
-        
-    def drag_pan(self, event):
-        dx = event.x - self.pan_start_x
-        dy = event.y - self.pan_start_y
-        
-        math_dx = (dx / self.canvas_w) * (self.xmax - self.xmin)
-        math_dy = (dy / self.canvas_h) * (self.ymax - self.ymin)
-        
-        self.xmin -= math_dx
-        self.xmax -= math_dx
-        self.ymin += math_dy
-        self.ymax += math_dy
-        
-        self.pan_start_x = event.x
-        self.pan_start_y = event.y
-        self.draw_graph()
-        
-    def zoom_wheel(self, event):
-        factor = 0.85 if event.delta > 0 else 1.15
-        self.zoom_at(event.x, event.y, factor)
-        
-    def zoom_at(self, sx, sy, factor):
-        # Adjust dimensions focused on current cursor math translation
-        mx, my = self.to_math(sx, sy)
-        
-        self.xmin = mx - (mx - self.xmin) * factor
-        self.xmax = mx + (self.xmax - mx) * factor
-        self.ymin = my - (my - self.ymin) * factor
-        self.ymax = my + (self.ymax - my) * factor
-        
-        self.draw_graph()
-
-    # --- Unit Converter Logic ---
-    def on_conv_cat_change(self, event):
-        cat = self.conv_cat_var.get()
-        units = self.conv_categories[cat]
-        
-        self.conv_from_combo.configure(values=units)
-        self.conv_to_combo.configure(values=units)
-        
-        self.conv_from_var.set(units[0])
-        self.conv_to_var.set(units[1] if len(units) > 1 else units[0])
-        
-        self.perform_conversion()
-        
-    def swap_units(self):
-        f = self.conv_from_var.get()
-        t = self.conv_to_var.get()
-        self.conv_from_var.set(t)
-        self.conv_to_var.set(f)
-        self.perform_conversion()
-        
-    def perform_conversion(self):
-        cat = self.conv_cat_var.get()
-        val_str = self.conv_input_var.get().strip()
-        
-        if not val_str:
-            self.conv_result_var.set("")
-            return
-            
-        try:
-            val = float(val_str)
-        except ValueError:
-            self.conv_result_var.set("Error: Enter numeric input")
-            return
-            
-        from_unit = self.conv_from_var.get()
-        to_unit = self.conv_to_var.get()
-        
-        if from_unit == to_unit:
-            self.conv_result_var.set(f"{val_str}")
-            return
-            
-        # Core standard unit mappings
-        res = 0.0
-        if cat == "Length":
-            # Map factors to Meters (base)
-            factors = {"Meter (m)": 1.0, "Kilometer (km)": 1000.0, "Mile (mi)": 1609.344, "Foot (ft)": 0.3048, "Inch (in)": 0.0254}
-            val_m = val * factors[from_unit]
-            res = val_m / factors[to_unit]
-            
-        elif cat == "Mass":
-            # Map factors to Kilograms (base)
-            factors = {"Kilogram (kg)": 1.0, "Gram (g)": 0.001, "Pound (lb)": 0.45359237, "Ounce (oz)": 0.028349523}
-            val_kg = val * factors[from_unit]
-            res = val_kg / factors[to_unit]
-            
-        elif cat == "Angle":
-            # Map to Radians
-            if from_unit == "Degree (°)":
-                val_rad = math.radians(val)
-            else:
-                val_rad = val
-                
-            if to_unit == "Degree (°)":
-                res = math.degrees(val_rad)
-            else:
-                res = val_rad
-                
-        elif cat == "Temperature":
-            # Conversions
-            if from_unit == "Celsius (°C)":
-                if to_unit == "Fahrenheit (°F)":
-                    res = (val * 9/5) + 32
-                elif to_unit == "Kelvin (K)":
-                    res = val + 273.15
-            elif from_unit == "Fahrenheit (°F)":
-                if to_unit == "Celsius (°C)":
-                    res = (val - 32) * 5/9
-                elif to_unit == "Kelvin (K)":
-                    res = (val - 32) * 5/9 + 273.15
-            elif from_unit == "Kelvin (K)":
-                if to_unit == "Celsius (°C)":
-                    res = val - 273.15
-                elif to_unit == "Fahrenheit (°F)":
-                    res = (val - 273.15) * 9/5 + 32
-                    
-        # Presentation format rounding
-        self.conv_result_var.set(f"{round(res, 8):g}")
-
-    # --- Theme Switching Engine ---
-    def on_theme_select(self, event):
-        self.current_theme_name = self.theme_var.get()
-        self.theme = THEMES[self.current_theme_name]
-        self.apply_theme()
-        
-    def apply_theme(self):
-        # Update colors on base configurations
-        self.main_container.configure(bg=self.theme["bg"])
-        self.calc_pane.configure(bg=self.theme["bg"])
-        self.sidebar_pane.configure(bg=self.theme["sidebar_bg"])
-        
-        self.app_title.configure(bg=self.theme["bg"], fg=self.theme["accent"])
-        self.expr_entry.configure(bg=self.theme["display_bg"], fg=self.theme["text_secondary"], insertbackground=self.theme["text"])
-        self.result_label.configure(bg=self.theme["display_bg"], fg=self.theme["text"])
-        self.expr_entry.master.configure(bg=self.theme["display_bg"])
-        
-        self.status_frame.configure(bg=self.theme["bg"])
-        self.mode_label.configure(bg=self.theme["num_bg"], fg=self.theme["accent"])
-        self.keypad_frame.configure(bg=self.theme["bg"])
-        
-        self.sidebar_header.configure(bg=self.theme["sidebar_bg"])
-        self.sidebar_content.configure(bg=self.theme["sidebar_bg"])
-        
-        # Tabs frame
-        self.graph_tab_frame.configure(bg=self.theme["sidebar_bg"])
-        self.graph_tab_frame.winfo_children()[0].configure(bg=self.theme["sidebar_bg"])  # ctrl_frame
-        self.graph_tab_frame.winfo_children()[0].winfo_children()[0].configure(bg=self.theme["sidebar_bg"], fg=self.theme["text"])  # label
-        self.graph_expr_entry.configure(bg=self.theme["display_bg"], fg=self.theme["text"], insertbackground=self.theme["text"])
-        self.graph_canvas.configure(bg=self.theme["display_bg"])
-        self.graph_tab_frame.winfo_children()[2].configure(bg=self.theme["sidebar_bg"])  # btns_frame
-        self.graph_error_lbl.configure(bg=self.theme["sidebar_bg"])
-        
-        self.convert_tab_frame.configure(bg=self.theme["sidebar_bg"])
-        for child in self.convert_tab_frame.winfo_children():
-            if isinstance(child, tk.Frame):
-                child.configure(bg=self.theme["sidebar_bg"])
-                for label in child.winfo_children():
-                    if isinstance(label, tk.Label):
-                        if label == self.conv_result_lbl:
-                            label.configure(bg=self.theme["display_bg"], fg=self.theme["accent"])
-                        else:
-                            label.configure(bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"])
-            
-        self.conv_input_entry.configure(bg=self.theme["display_bg"], fg=self.theme["text"], insertbackground=self.theme["text"])
-        
-        self.constants_tab_frame.configure(bg=self.theme["sidebar_bg"])
-        self.constants_tab_frame.winfo_children()[0].configure(bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"])
-        const_canvas = self.constants_tab_frame.winfo_children()[1]
-        const_canvas.configure(bg=self.theme["sidebar_bg"])
-        self.const_scroll_frame.configure(bg=self.theme["sidebar_bg"])
-        
-        # Re-theme individual cards in scroll frame
-        for card in self.const_scroll_frame.winfo_children():
-            card.configure(bg=self.theme["display_bg"])
-            card.winfo_children()[0].configure(bg=self.theme["display_bg"], fg=self.theme["text"])  # Title
-            card.winfo_children()[1].configure(bg=self.theme["display_bg"])  # det_frame
-            card.winfo_children()[1].winfo_children()[0].configure(bg=self.theme["display_bg"], fg=self.theme["text_secondary"])  # Label
-            card.winfo_children()[1].winfo_children()[1].update_colors(
-                self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-                self.theme["accent"], self.theme["active_fg"], self.theme["active_fg"]
-            )
-            
-        # History frame
-        self.history_tab_frame.configure(bg=self.theme["sidebar_bg"])
-        self.history_tab_frame.winfo_children()[0].configure(bg=self.theme["sidebar_bg"])  # header
-        self.history_tab_frame.winfo_children()[0].winfo_children()[0].configure(bg=self.theme["sidebar_bg"], fg=self.theme["text_secondary"])
-        self.clear_hist_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["accent"], self.theme["active_fg"], self.theme["active_fg"]
+        self.basic_display = tk.Entry(
+            disp_frame,
+            font=self.scale_font("Segoe UI", 24, "bold"),
+            bg=theme["display_bg"],
+            fg=theme["display_fg"],
+            bd=0,
+            justify="right",
+            insertbackground=theme["display_fg"],
+            state="readonly"
         )
-        self.hist_canvas.configure(bg=self.theme["sidebar_bg"])
-        self.hist_scroll_frame.configure(bg=self.theme["sidebar_bg"])
-        self.update_history_display()
+        self.basic_display.pack(fill="both", expand=True, padx=15, pady=15)
         
-        # Update tab switcher buttons colors
-        for name, btn in self.tab_buttons.items():
-            if name == self.current_sidebar_tab:
-                btn.update_colors(
-                    self.theme["accent"], self.theme["accent"], self.theme["op_hover"],
-                    self.theme["active_fg"], self.theme["active_fg"], self.theme["active_fg"]
-                )
+        self.expression = ""
+        self.update_basic_display("0")
+        
+        keypad_frame = tk.Frame(self.center_pane, bg=theme["bg"])
+        keypad_frame.pack(fill="both", expand=True, padx=40, pady=(5, 20))
+        
+        buttons_def = [
+            ("C", 0, 0, "spec"), ("⌫", 0, 1, "spec"), ("^", 0, 2, "spec"), ("÷", 0, 3, "op"),
+            ("7", 1, 0, "num"),  ("8", 1, 1, "num"),  ("9", 1, 2, "num"),  ("×", 1, 3, "op"),
+            ("4", 2, 0, "num"),  ("5", 2, 1, "num"),  ("6", 2, 2, "num"),  ("-", 2, 3, "op"),
+            ("1", 3, 0, "num"),  ("2", 3, 1, "num"),  ("3", 3, 2, "num"),  ("+", 3, 3, "op"),
+            ("√", 4, 0, "spec"), ("0", 4, 1, "num"),  (".", 4, 2, "num"),  ("%", 4, 3, "spec"),
+            ("(", 5, 0, "spec"), (")", 5, 1, "spec"), ("=", 5, 2, "eq")
+        ]
+        
+        for i in range(4):
+            keypad_frame.columnconfigure(i, weight=1)
+        for i in range(6):
+            keypad_frame.rowconfigure(i, weight=1)
+            
+        for text, row, col, category in buttons_def:
+            colors = self.get_category_colors(category, theme)
+            
+            if text == "C":
+                cmd = self.clear_basic
+            elif text == "⌫":
+                cmd = self.backspace_basic
+            elif text == "=":
+                cmd = self.calculate_basic
             else:
-                btn.update_colors(
-                    self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-                    self.theme["text_secondary"], self.theme["active_fg"], self.theme["active_fg"]
-                )
+                cmd = lambda val=text: self.basic_click(val)
                 
-        # Main UI Buttons colors
-        buttons_defs = {
-            "num": ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", ".", "π", "e"],
-            "spec": ["C", "⌫", "="],
-            # All other buttons are 'op'
+            btn = RoundedButton(
+                keypad_frame,
+                text=text,
+                radius=12,
+                font=self.scale_font("Segoe UI", 12, "bold"),
+                normal_bg=colors["normal_bg"],
+                hover_bg=colors["hover_bg"],
+                active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"],
+                hover_fg=colors["hover_fg"],
+                active_fg=colors["active_fg"],
+                command=cmd
+            )
+            
+            if text == "=":
+                btn.grid(row=row, column=col, columnspan=2, sticky="nsew", padx=3, pady=3)
+            else:
+                btn.grid(row=row, column=col, sticky="nsew", padx=3, pady=3)
+
+    def basic_click(self, value):
+        if self.expression == "Error":
+            self.expression = ""
+        self.expression += str(value)
+        self.update_basic_display(self.expression)
+
+    def clear_basic(self):
+        self.expression = ""
+        self.update_basic_display("0")
+
+    def backspace_basic(self):
+        if self.expression == "Error":
+            self.expression = ""
+        elif len(self.expression) > 0:
+            self.expression = self.expression[:-1]
+        self.update_basic_display(self.expression if self.expression else "0")
+
+    def calculate_basic(self):
+        if not self.expression or self.expression == "Error":
+            return
+        orig_expr = self.expression
+        try:
+            expr = self.expression
+            expr = expr.replace("√(", "sqrt(")
+            expr = re.sub(r'√([0-9.]+)', r'sqrt(\1)', expr)
+            expr = expr.replace("×", "*")
+            expr = expr.replace("÷", "/")
+            expr = expr.replace("^", "**")
+            expr = expr.replace("%", "/100")
+            
+            check_str = expr.replace("sqrt", "")
+            allowed = set("0123456789+-*/.() ")
+            for char in check_str:
+                if char not in allowed:
+                    raise ValueError
+                    
+            result = eval(expr, {"__builtins__": {}}, {"sqrt": math.sqrt})
+            
+            if isinstance(result, float):
+                if result.is_integer():
+                    result = int(result)
+                else:
+                    result = round(result, 10)
+            self.expression = str(result)
+            self.update_basic_display(self.expression)
+            self.add_history(orig_expr, self.expression)
+        except Exception:
+            self.expression = "Error"
+            self.update_basic_display(self.expression)
+
+    def update_basic_display(self, text):
+        self.basic_display.configure(state="normal")
+        self.basic_display.delete(0, tk.END)
+        self.basic_display.insert(0, text)
+        self.basic_display.configure(state="readonly")
+
+    # --- Module: Scientific Calculator ---
+    def build_scientific_calc(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Scientific Calculator")
+        
+        disp_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], height=80, bd=0, relief="flat", highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        disp_frame.pack(fill="x", padx=55, pady=5)
+        disp_frame.pack_propagate(False)
+        
+        self.display_var = tk.StringVar(value="30")
+        self.scientific_display = tk.Entry(
+            disp_frame,
+            textvariable=self.display_var,
+            font=self.scale_font("Segoe UI", 24, "bold"),
+            bg=theme["display_bg"],
+            fg=theme["display_fg"],
+            bd=0,
+            justify="left"
+        )
+        self.scientific_display.pack(fill="both", expand=True, padx=15, pady=(10, 2))
+        
+        self.preview_var = tk.StringVar(value="sin(30)")
+        preview_lbl = tk.Label(
+            self.center_pane,
+            textvariable=self.preview_var,
+            font=self.scale_font("Segoe UI", 12),
+            bg=theme["bg"],
+            fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8"
+        )
+        preview_lbl.pack(pady=(2, 8))
+        
+        key_frame = tk.Frame(self.center_pane, bg=theme["bg"])
+        key_frame.pack(fill="both", expand=True, padx=55, pady=(5, 25))
+        
+        for i in range(3):
+            key_frame.columnconfigure(i, weight=1)
+        for i in range(4):
+            key_frame.rowconfigure(i, weight=1)
+            
+        sci_buttons = [
+            ("sin", 0, 0), ("cos", 0, 1), ("tan", 0, 2),
+            ("log", 1, 0), ("ln", 1, 1),  ("√", 1, 2),
+            ("x²", 2, 0),  ("x³", 2, 1),  ("n!", 2, 2),
+            ("π", 3, 0),   ("e", 3, 1),   ("=", 3, 2)
+        ]
+        
+        teal_theme = {
+            "normal_bg": "#14B8A6",
+            "hover_bg": "#2DD4BF",
+            "active_bg": "#0F766E",
+            "normal_fg": "#FFFFFF",
+            "hover_fg": "#FFFFFF",
+            "active_fg": "#FFFFFF"
         }
         
-        for text, btn in self.buttons.items():
-            if text in buttons_defs["num"]:
-                nbg, hbg, abg = self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"]
-                nfg, hfg, afg = self.theme["num_fg"], self.theme["active_fg"], self.theme["active_fg"]
-            elif text in buttons_defs["spec"]:
-                nbg, hbg, abg = self.theme["spec_bg"], self.theme["spec_hover"], self.theme["num_hover"]
-                nfg, hfg, afg = self.theme["spec_fg"], self.theme["active_fg"], self.theme["active_fg"]
+        eq_colors = self.get_category_colors("eq", theme)
+        
+        for text, row, col in sci_buttons:
+            colors = eq_colors if text == "=" else teal_theme
+            
+            btn = RoundedButton(
+                key_frame,
+                text=text,
+                radius=12,
+                font=self.scale_font("Segoe UI", 12, "bold"),
+                normal_bg=colors["normal_bg"],
+                hover_bg=colors["hover_bg"],
+                active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"],
+                hover_fg=colors["hover_fg"],
+                active_fg=colors["active_fg"],
+                command=lambda val=text: self.scientific_click(val)
+            )
+            btn.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
+
+    def scientific_click(self, op):
+        current = self.display_var.get().strip()
+        
+        if op == "=":
+            self.calculate_scientific()
+            return
+            
+        if self.display_var.get() == "Error":
+            current = ""
+            
+        if op == "π":
+            self.display_var.set(current + str(round(math.pi, 8)))
+            return
+        elif op == "e":
+            self.display_var.set(current + str(round(math.e, 8)))
+            return
+            
+        if op in ["sin", "cos", "tan", "log", "ln", "√"]:
+            if current == "" or current == "0":
+                self.display_var.set(f"{op}(")
             else:
-                nbg, hbg, abg = self.theme["op_bg"], self.theme["op_hover"], self.theme["num_hover"]
-                nfg, hfg, afg = self.theme["op_fg"], self.theme["active_fg"], self.theme["active_fg"]
-            btn.update_colors(nbg, hbg, abg, nfg, hfg, afg)
+                self.display_var.set(f"{op}({current})")
+                self.preview_var.set(f"{op}({current})")
+                self.calculate_scientific()
+            return
             
-        # Top toggle button update
-        self.toggle_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["accent"], self.theme["active_fg"], self.theme["active_fg"]
-        )
-        
-        # Plot button update
-        self.plot_btn.update_colors(
-            self.theme["spec_bg"], self.theme["spec_hover"], self.theme["num_hover"],
-            self.theme["spec_fg"], self.theme["active_fg"], self.theme["active_fg"]
-        )
-        
-        # Zoom in/out update
-        self.zoom_in_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["text"], self.theme["active_fg"], self.theme["active_fg"]
-        )
-        self.zoom_out_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["text"], self.theme["active_fg"], self.theme["active_fg"]
-        )
-        self.reset_graph_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["text"], self.theme["active_fg"], self.theme["active_fg"]
-        )
-        
-        # Swap converter update
-        self.swap_units_btn.update_colors(
-            self.theme["num_bg"], self.theme["num_hover"], self.theme["op_hover"],
-            self.theme["accent"], self.theme["active_fg"], self.theme["active_fg"]
-        )
+        if op == "x²":
+            if current != "":
+                self.display_var.set(f"({current})^2")
+                self.preview_var.set(f"({current})²")
+                self.calculate_scientific()
+            return
+        elif op == "x³":
+            if current != "":
+                self.display_var.set(f"({current})^3")
+                self.preview_var.set(f"({current})³")
+                self.calculate_scientific()
+            return
+        elif op == "n!":
+            if current != "":
+                self.display_var.set(f"fact({current})")
+                self.preview_var.set(f"({current})!")
+                self.calculate_scientific()
+            return
 
-        # Style Comboboxes dropdown lists using themed elements
-        self.style.configure(
-            "TCombobox", fieldbackground=self.theme["display_bg"], background=self.theme["num_bg"],
-            foreground=self.theme["text"], bordercolor=self.theme["grid_color"],
-            arrowcolor=self.theme["accent"]
-        )
-        # Apply dark themes to TCombobox selection lists too
-        self.option_add("*TCombobox*Listbox.background", self.theme["display_bg"])
-        self.option_add("*TCombobox*Listbox.foreground", self.theme["text"])
-        self.option_add("*TCombobox*Listbox.selectBackground", self.theme["accent"])
-        self.option_add("*TCombobox*Listbox.selectForeground", self.theme["active_fg"])
-        
-        # Redraw graph (will apply new colors)
-        if self.sidebar_open and self.current_sidebar_tab == "Graph":
-            self.draw_graph()
-
-    # --- Keyboard Key Bindings Engine ---
-    def bind_keys(self):
-        # Digital buttons triggers
-        for char in "0123456789.()":
-            self.bind(char, lambda e, c=char: self.insert_text(c))
+    def calculate_scientific(self):
+        expr = self.display_var.get().strip()
+        if not expr or expr == "Error":
+            return
             
-        # Operator conversions
-        self.bind("+", lambda e: self.insert_text("+"))
-        self.bind("-", lambda e: self.insert_text("-"))
-        self.bind("*", lambda e: self.insert_text("×"))
-        self.bind("/", lambda e: self.insert_text("÷"))
-        self.bind("^", lambda e: self.insert_text("^"))
-        self.bind("%", lambda e: self.insert_text("%"))
+        try:
+            def sin_deg(x): return math.sin(math.radians(x))
+            def cos_deg(x): return math.cos(math.radians(x))
+            def tan_deg(x):
+                if math.isclose(math.cos(math.radians(x)), 0, abs_tol=1e-9):
+                    raise ValueError
+                return math.tan(math.radians(x))
+                
+            def log_10(x):
+                if x <= 0: raise ValueError
+                return math.log10(x)
+                
+            def ln_e(x):
+                if x <= 0: raise ValueError
+                return math.log(x)
+                
+            def sqrt_op(x):
+                if x < 0: raise ValueError
+                return math.sqrt(x)
+                
+            def fact_op(x):
+                if x < 0 or not float(x).is_integer():
+                    raise ValueError
+                return math.factorial(int(x))
+                
+            cleaned = expr.replace("×", "*").replace("÷", "/").replace("^", "**")
+            
+            eval_namespace = {
+                "sin": sin_deg,
+                "cos": cos_deg,
+                "tan": tan_deg,
+                "log": log_10,
+                "ln": ln_e,
+                "sqrt": sqrt_op,
+                "fact": fact_op,
+                "pi": math.pi,
+                "e": math.e
+            }
+            
+            check_str = cleaned
+            for key in eval_namespace.keys():
+                check_str = check_str.replace(key, "")
+            allowed = set("0123456789+-*/.() %*")
+            for char in check_str:
+                if char not in allowed:
+                    raise ValueError
+                    
+            result = eval(cleaned, {"__builtins__": {}}, eval_namespace)
+            
+            if isinstance(result, float):
+                if result.is_integer():
+                    result = int(result)
+                else:
+                    result = round(result, 8)
+            self.display_var.set(str(result))
+            self.add_history(expr, str(result))
+        except Exception:
+            self.display_var.set("Error")
+
+    # --- Module: Finance ---
+    def build_finance(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Finance Hub")
         
-        # Functional evaluations
-        self.bind("<Return>", lambda e: self.evaluate_expr())
-        self.bind("<KP_Enter>", lambda e: self.evaluate_expr())
-        self.bind("<BackSpace>", lambda e: self.backspace_expr())
-        self.bind("<Escape>", lambda e: self.clear_expr())
-        self.bind("<Delete>", lambda e: self.clear_expr())
+        selector_frame = tk.Frame(self.center_pane, bg=theme["bg"])
+        selector_frame.pack(fill="x", padx=40, pady=5)
+        
+        tk.Label(selector_frame, text="Select Tool:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["bg"], fg=theme["display_fg"]).pack(side="left")
+        self.finance_tool_var = tk.StringVar(value="GST Calculator")
+        finance_combo = ttk.Combobox(selector_frame, textvariable=self.finance_tool_var, values=["GST Calculator", "EMI Calculator", "Compound Interest"], state="readonly", font=self.scale_font("Segoe UI", 10))
+        finance_combo.pack(side="left", padx=10)
+        finance_combo.bind("<<ComboboxSelected>>", lambda e: self.rebuild_finance_form())
+        
+        self.finance_content = tk.Frame(self.center_pane, bg=theme["bg"])
+        self.finance_content.pack(fill="both", expand=True, padx=40, pady=5)
+        
+        self.rebuild_finance_form()
+
+    def rebuild_finance_form(self):
+        for w in self.finance_content.winfo_children():
+            w.destroy()
+            
+        theme = self.themes[self.current_theme]
+        tool = self.finance_tool_var.get()
+        
+        form_frame = tk.Frame(self.finance_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(fill="x", pady=10)
+        form_frame.columnconfigure(1, weight=1)
+        
+        colors = self.get_category_colors("op", theme)
+        
+        if tool == "GST Calculator":
+            tk.Label(form_frame, text="Original Amount (₹):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=5)
+            self.gst_amount_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid", highlightthickness=0)
+            self.gst_amount_entry.grid(row=0, column=1, pady=5, padx=10, sticky="ew")
+            self.gst_amount_entry.insert(0, "1000")
+            
+            tk.Label(form_frame, text="GST Rate (%):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=5)
+            self.gst_rate_var = tk.StringVar(value="18")
+            gst_rate_combo = ttk.Combobox(form_frame, textvariable=self.gst_rate_var, values=["5", "12", "18", "28"], state="readonly", font=self.scale_font("Segoe UI", 10))
+            gst_rate_combo.grid(row=1, column=1, pady=5, padx=10, sticky="ew")
+            
+            calc_btn = RoundedButton(
+                self.finance_content, text="Calculate GST", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_gst, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.fin_results_frame = tk.Frame(self.finance_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.fin_results_frame.pack(fill="x", pady=5)
+            
+            row1 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row1.pack(fill="x", pady=3)
+            tk.Label(row1, text="Net Price (Excl. GST):", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl1 = tk.Label(row1, text="₹1,000.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"])
+            self.fin_lbl1.pack(side="right")
+            
+            row2 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row2.pack(fill="x", pady=3)
+            tk.Label(row2, text="GST Tax Amount (18%):", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl2 = tk.Label(row2, text="₹180.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+            self.fin_lbl2.pack(side="right")
+            
+            row3 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row3.pack(fill="x", pady=3)
+            tk.Label(row3, text="Total Price (Incl. GST):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl3 = tk.Label(row3, text="₹1,180.00", font=self.scale_font("Segoe UI", 13, "bold"), bg=theme["display_bg"], fg=theme["btn_eq_bg"])
+            self.fin_lbl3.pack(side="right")
+            
+        elif tool == "EMI Calculator":
+            tk.Label(form_frame, text="Loan Amount (Principal ₹):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=4)
+            self.emi_p_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.emi_p_entry.grid(row=0, column=1, pady=4, padx=10, sticky="ew")
+            self.emi_p_entry.insert(0, "100000")
+            
+            tk.Label(form_frame, text="Annual Interest Rate (%):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=4)
+            self.emi_r_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.emi_r_entry.grid(row=1, column=1, pady=4, padx=10, sticky="ew")
+            self.emi_r_entry.insert(0, "8.5")
+            
+            tk.Label(form_frame, text="Tenure (Months):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=4)
+            self.emi_n_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.emi_n_entry.grid(row=2, column=1, pady=4, padx=10, sticky="ew")
+            self.emi_n_entry.insert(0, "24")
+            
+            calc_btn = RoundedButton(
+                self.finance_content, text="Calculate EMI", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_emi, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.fin_results_frame = tk.Frame(self.finance_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.fin_results_frame.pack(fill="x", pady=5)
+            
+            row1 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row1.pack(fill="x", pady=3)
+            tk.Label(row1, text="Monthly EMI:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl1 = tk.Label(row1, text="₹0.00", font=self.scale_font("Segoe UI", 13, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+            self.fin_lbl1.pack(side="right")
+            
+            row2 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row2.pack(fill="x", pady=3)
+            tk.Label(row2, text="Total Interest Payable:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl2 = tk.Label(row2, text="₹0.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"])
+            self.fin_lbl2.pack(side="right")
+            
+            row3 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row3.pack(fill="x", pady=3)
+            tk.Label(row3, text="Total Amount Payable:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl3 = tk.Label(row3, text="₹0.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_eq_bg"])
+            self.fin_lbl3.pack(side="right")
+            
+        else:  # Compound Interest
+            tk.Label(form_frame, text="Principal Amount (₹):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=4)
+            self.ci_p_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.ci_p_entry.grid(row=0, column=1, pady=4, padx=10, sticky="ew")
+            self.ci_p_entry.insert(0, "10000")
+            
+            tk.Label(form_frame, text="Interest Rate (% per year):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=4)
+            self.ci_r_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.ci_r_entry.grid(row=1, column=1, pady=4, padx=10, sticky="ew")
+            self.ci_r_entry.insert(0, "5")
+            
+            tk.Label(form_frame, text="Tenure (Years):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=4)
+            self.ci_t_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.ci_t_entry.grid(row=2, column=1, pady=4, padx=10, sticky="ew")
+            self.ci_t_entry.insert(0, "5")
+            
+            tk.Label(form_frame, text="Compounding:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=3, column=0, sticky="w", pady=4)
+            self.ci_freq_var = tk.StringVar(value="Annual")
+            ci_combo = ttk.Combobox(form_frame, textvariable=self.ci_freq_var, values=["Annual", "Semi-Annual", "Quarterly", "Monthly"], state="readonly", font=self.scale_font("Segoe UI", 10))
+            ci_combo.grid(row=3, column=1, pady=4, padx=10, sticky="ew")
+            
+            calc_btn = RoundedButton(
+                self.finance_content, text="Calculate Interest", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_compound_interest, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.fin_results_frame = tk.Frame(self.finance_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.fin_results_frame.pack(fill="x", pady=5)
+            
+            row1 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row1.pack(fill="x", pady=3)
+            tk.Label(row1, text="Future Value (Total):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl1 = tk.Label(row1, text="₹0.00", font=self.scale_font("Segoe UI", 13, "bold"), bg=theme["display_bg"], fg=theme["btn_eq_bg"])
+            self.fin_lbl1.pack(side="right")
+            
+            row2 = tk.Frame(self.fin_results_frame, bg=theme["display_bg"])
+            row2.pack(fill="x", pady=3)
+            tk.Label(row2, text="Interest Earned:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+            self.fin_lbl2 = tk.Label(row2, text="₹0.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+            self.fin_lbl2.pack(side="right")
+
+    # --- Module: Statistical ---
+    def build_statistical(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Statistical Calculator")
+        
+        form_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(form_frame, text="Enter Numbers (separated by commas):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).pack(anchor="w")
+        self.stat_input_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.stat_input_entry.pack(fill="x", pady=10)
+        self.stat_input_entry.insert(0, "10, 20, 30, 40, 50")
+        
+        colors = self.get_category_colors("op", theme)
+        calc_btn = RoundedButton(
+            self.center_pane, text="Compute Statistics", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+            normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+            normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+            command=self.calculate_statistical, height=35
+        )
+        calc_btn.pack(pady=15, padx=50, fill="x")
+        
+        self.stat_results_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        self.stat_results_frame.pack(padx=50, pady=10, fill="x")
+        
+        s1 = tk.Frame(self.stat_results_frame, bg=theme["display_bg"])
+        s1.pack(fill="x", pady=3)
+        tk.Label(s1, text="Mean | Median | Mode:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+        self.stat_res_lbl1 = tk.Label(s1, text="Mean: 30 | Median: 30 | Mode: 10", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+        self.stat_res_lbl1.pack(side="right")
+        
+        s2 = tk.Frame(self.stat_results_frame, bg=theme["display_bg"])
+        s2.pack(fill="x", pady=3)
+        tk.Label(s2, text="Variance | Std Dev:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+        self.stat_res_lbl2 = tk.Label(s2, text="Var: 250 | Std Dev: 15.81", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_eq_bg"])
+        self.stat_res_lbl2.pack(side="right")
+
+    # --- Module: Retirement Planning ---
+    def build_retirement(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Retirement Planner")
+        
+        form_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(form_frame, text="Current Age:", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=4)
+        self.ret_age_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.ret_age_entry.grid(row=0, column=1, pady=4, padx=10, sticky="ew")
+        self.ret_age_entry.insert(0, "30")
+        
+        tk.Label(form_frame, text="Planned Retirement Age:", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=4)
+        self.ret_target_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.ret_target_entry.grid(row=1, column=1, pady=4, padx=10, sticky="ew")
+        self.ret_target_entry.insert(0, "60")
+        
+        tk.Label(form_frame, text="Monthly Savings (₹):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=4)
+        self.ret_savings_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.ret_savings_entry.grid(row=2, column=1, pady=4, padx=10, sticky="ew")
+        self.ret_savings_entry.insert(0, "5000")
+        
+        tk.Label(form_frame, text="Expected Return (% / yr):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=3, column=0, sticky="w", pady=4)
+        self.ret_return_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.ret_return_entry.grid(row=3, column=1, pady=4, padx=10, sticky="ew")
+        self.ret_return_entry.insert(0, "10")
+        
+        tk.Label(form_frame, text="Expected Inflation (% / yr):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=4, column=0, sticky="w", pady=4)
+        self.ret_inf_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.ret_inf_entry.grid(row=4, column=1, pady=4, padx=10, sticky="ew")
+        self.ret_inf_entry.insert(0, "6")
+        
+        form_frame.columnconfigure(1, weight=1)
+        
+        colors = self.get_category_colors("op", theme)
+        calc_btn = RoundedButton(
+            self.center_pane, text="Calculate Corpus", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+            normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+            normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+            command=self.calculate_retirement, height=35
+        )
+        calc_btn.pack(pady=10, padx=50, fill="x")
+        
+        self.ret_results_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        self.ret_results_frame.pack(padx=50, pady=5, fill="x")
+        
+        t1 = tk.Frame(self.ret_results_frame, bg=theme["display_bg"])
+        t1.pack(fill="x", pady=3)
+        tk.Label(t1, text="Invested Years & Principal:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+        self.ret_res_lbl1 = tk.Label(t1, text="Invested Years: 30 | Total Principal: ₹1,800,000.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"])
+        self.ret_res_lbl1.pack(side="right")
+        
+        t2 = tk.Frame(self.ret_results_frame, bg=theme["display_bg"])
+        t2.pack(fill="x", pady=3)
+        tk.Label(t2, text="Estimated Nominal Value:", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+        self.ret_res_lbl2 = tk.Label(t2, text="₹11,396,627.00", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+        self.ret_res_lbl2.pack(side="right")
+        
+        t3 = tk.Frame(self.ret_results_frame, bg=theme["display_bg"])
+        t3.pack(fill="x", pady=3)
+        tk.Label(t3, text="Real Purchasing Power:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"] if self.current_theme == "light" else "#94A3B8").pack(side="left")
+        self.ret_res_lbl3 = tk.Label(t3, text="₹1,984,277.00", font=self.scale_font("Segoe UI", 13, "bold"), bg=theme["display_bg"], fg=theme["btn_eq_bg"])
+        self.ret_res_lbl3.pack(side="right")
+
+    # --- Module: Age Calculator ---
+    def build_age_calc(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Age Calculator")
+        
+        form_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(form_frame, text="Birth Year (YYYY):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=6)
+        self.age_year_sb = tk.Spinbox(form_frame, from_=1900, to=2026, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.age_year_sb.grid(row=0, column=1, pady=6, padx=10, sticky="ew")
+        self.age_year_sb.delete(0, "end")
+        self.age_year_sb.insert(0, "1995")
+        
+        tk.Label(form_frame, text="Birth Month (1-12):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=6)
+        self.age_month_sb = tk.Spinbox(form_frame, from_=1, to=12, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.age_month_sb.grid(row=1, column=1, pady=6, padx=10, sticky="ew")
+        self.age_month_sb.delete(0, "end")
+        self.age_month_sb.insert(0, "10")
+        
+        tk.Label(form_frame, text="Birth Day (1-31):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=6)
+        self.age_day_sb = tk.Spinbox(form_frame, from_=1, to=31, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.age_day_sb.grid(row=2, column=1, pady=6, padx=10, sticky="ew")
+        self.age_day_sb.delete(0, "end")
+        self.age_day_sb.insert(0, "15")
+        
+        form_frame.columnconfigure(1, weight=1)
+        
+        colors = self.get_category_colors("op", theme)
+        calc_btn = RoundedButton(
+            self.center_pane, text="Calculate Age", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+            normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+            normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+            command=self.calculate_age, height=35
+        )
+        calc_btn.pack(pady=15, padx=50, fill="x")
+        
+        self.age_results_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        self.age_results_frame.pack(padx=50, pady=10, fill="x")
+        
+        self.age_result_lbl = tk.Label(self.age_results_frame, text="Result: Click Calculate", font=self.scale_font("Segoe UI", 14, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+        self.age_result_lbl.pack(pady=5)
+
+    # --- Module: Unit Converter ---
+    def build_unit_conv(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Unit Converter")
+        
+        form_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(form_frame, text="Category:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=5)
+        self.unit_cat_var = tk.StringVar(value="Length")
+        unit_cat_combo = ttk.Combobox(form_frame, textvariable=self.unit_cat_var, values=["Length", "Weight", "Area"], state="readonly", font=self.scale_font("Segoe UI", 11))
+        unit_cat_combo.grid(row=0, column=1, pady=5, padx=10, sticky="ew")
+        unit_cat_combo.bind("<<ComboboxSelected>>", self.on_unit_category_change)
+        
+        tk.Label(form_frame, text="Value:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=5)
+        self.unit_val_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+        self.unit_val_entry.grid(row=1, column=1, pady=5, padx=10, sticky="ew")
+        self.unit_val_entry.insert(0, "1")
+        
+        tk.Label(form_frame, text="From Unit:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=5)
+        self.unit_from_var = tk.StringVar()
+        self.unit_from_combo = ttk.Combobox(form_frame, textvariable=self.unit_from_var, state="readonly", font=self.scale_font("Segoe UI", 11))
+        self.unit_from_combo.grid(row=2, column=1, pady=5, padx=10, sticky="ew")
+        
+        tk.Label(form_frame, text="To Unit:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=3, column=0, sticky="w", pady=5)
+        self.unit_to_var = tk.StringVar()
+        self.unit_to_combo = ttk.Combobox(form_frame, textvariable=self.unit_to_var, state="readonly", font=self.scale_font("Segoe UI", 11))
+        self.unit_to_combo.grid(row=3, column=1, pady=5, padx=10, sticky="ew")
+        
+        form_frame.columnconfigure(1, weight=1)
+        self.update_unit_combos()
+        
+        colors = self.get_category_colors("op", theme)
+        calc_btn = RoundedButton(
+            self.center_pane, text="Convert Unit", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+            normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+            normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+            command=self.convert_unit, height=35
+        )
+        calc_btn.pack(pady=10, padx=50, fill="x")
+        
+        self.unit_results_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        self.unit_results_frame.pack(padx=50, pady=10, fill="x")
+        self.unit_result_lbl = tk.Label(self.unit_results_frame, text="Result: 1.00 m", font=self.scale_font("Segoe UI", 14, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+        self.unit_result_lbl.pack(pady=5)
+
+    # --- Module: Health Calculator ---
+    def build_health(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Health Hub")
+        
+        selector_frame = tk.Frame(self.center_pane, bg=theme["bg"])
+        selector_frame.pack(fill="x", padx=40, pady=5)
+        
+        tk.Label(selector_frame, text="Select Tool:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["bg"], fg=theme["display_fg"]).pack(side="left")
+        self.health_tool_var = tk.StringVar(value="BMI Calculator")
+        health_combo = ttk.Combobox(selector_frame, textvariable=self.health_tool_var, values=["BMI Calculator", "Daily Calories", "Daily Water Intake"], state="readonly", font=self.scale_font("Segoe UI", 10))
+        health_combo.pack(side="left", padx=10)
+        health_combo.bind("<<ComboboxSelected>>", lambda e: self.rebuild_health_form())
+        
+        self.health_content = tk.Frame(self.center_pane, bg=theme["bg"])
+        self.health_content.pack(fill="both", expand=True, padx=40, pady=5)
+        self.rebuild_health_form()
+
+    def rebuild_health_form(self):
+        for w in self.health_content.winfo_children():
+            w.destroy()
+            
+        theme = self.themes[self.current_theme]
+        tool = self.health_tool_var.get()
+        
+        form_frame = tk.Frame(self.health_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        form_frame.pack(fill="x", pady=10)
+        form_frame.columnconfigure(1, weight=1)
+        
+        colors = self.get_category_colors("op", theme)
+        
+        if tool == "BMI Calculator":
+            tk.Label(form_frame, text="Weight (kg):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=6)
+            self.bmi_w_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.bmi_w_entry.grid(row=0, column=1, pady=6, padx=10, sticky="ew")
+            self.bmi_w_entry.insert(0, "70")
+            
+            tk.Label(form_frame, text="Height (cm):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=6)
+            self.bmi_h_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.bmi_h_entry.grid(row=1, column=1, pady=6, padx=10, sticky="ew")
+            self.bmi_h_entry.insert(0, "175")
+            
+            calc_btn = RoundedButton(
+                self.health_content, text="Calculate BMI", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_bmi, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.health_results_frame = tk.Frame(self.health_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.health_results_frame.pack(fill="x", pady=5)
+            self.health_res_lbl = tk.Label(self.health_results_frame, text="BMI: 22.86 (Normal weight)", font=self.scale_font("Segoe UI", 14, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+            self.health_res_lbl.pack(pady=5)
+            
+        elif tool == "Daily Calories":
+            tk.Label(form_frame, text="Gender:", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=4)
+            self.cal_gender_var = tk.StringVar(value="Male")
+            cal_gender_combo = ttk.Combobox(form_frame, textvariable=self.cal_gender_var, values=["Male", "Female"], state="readonly", font=self.scale_font("Segoe UI", 10))
+            cal_gender_combo.grid(row=0, column=1, pady=4, padx=10, sticky="ew")
+            
+            tk.Label(form_frame, text="Age (Years):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=4)
+            self.cal_age_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.cal_age_entry.grid(row=1, column=1, pady=4, padx=10, sticky="ew")
+            self.cal_age_entry.insert(0, "30")
+            
+            tk.Label(form_frame, text="Weight (kg):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=2, column=0, sticky="w", pady=4)
+            self.cal_weight_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.cal_weight_entry.grid(row=2, column=1, pady=4, padx=10, sticky="ew")
+            self.cal_weight_entry.insert(0, "70")
+            
+            tk.Label(form_frame, text="Height (cm):", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=3, column=0, sticky="w", pady=4)
+            self.cal_height_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.cal_height_entry.grid(row=3, column=1, pady=4, padx=10, sticky="ew")
+            self.cal_height_entry.insert(0, "175")
+            
+            tk.Label(form_frame, text="Activity:", font=self.scale_font("Segoe UI", 10, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=4, column=0, sticky="w", pady=4)
+            self.cal_act_var = tk.StringVar(value="Moderate")
+            cal_act_combo = ttk.Combobox(form_frame, textvariable=self.cal_act_var, values=["Sedentary", "Light", "Moderate", "Active"], state="readonly", font=self.scale_font("Segoe UI", 10))
+            cal_act_combo.grid(row=4, column=1, pady=4, padx=10, sticky="ew")
+            
+            calc_btn = RoundedButton(
+                self.health_content, text="Calculate Calories", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_calories, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.health_results_frame = tk.Frame(self.health_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.health_results_frame.pack(fill="x", pady=5)
+            self.health_res_lbl = tk.Label(self.health_results_frame, text="Maintenance Calories: 2,230 kcal / day", font=self.scale_font("Segoe UI", 12, "bold"), bg=theme["display_bg"], fg=theme["display_fg"])
+            self.health_res_lbl.pack(pady=5)
+            
+        else:  # Daily Water Intake
+            tk.Label(form_frame, text="Weight (kg):", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=6)
+            self.water_w_entry = tk.Entry(form_frame, font=self.scale_font("Segoe UI", 11), bg=theme["bg"], fg=theme["display_fg"], bd=1, relief="solid")
+            self.water_w_entry.grid(row=0, column=1, pady=6, padx=10, sticky="ew")
+            self.water_w_entry.insert(0, "70")
+            
+            tk.Label(form_frame, text="Daily Activity:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=1, column=0, sticky="w", pady=6)
+            self.water_act_var = tk.StringVar(value="Moderate")
+            water_act_combo = ttk.Combobox(form_frame, textvariable=self.water_act_var, values=["Low", "Moderate", "High"], state="readonly", font=self.scale_font("Segoe UI", 11))
+            water_act_combo.grid(row=1, column=1, pady=6, padx=10, sticky="ew")
+            
+            calc_btn = RoundedButton(
+                self.health_content, text="Calculate Water Target", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+                normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+                command=self.calculate_water, height=35
+            )
+            calc_btn.pack(pady=10, fill="x")
+            
+            self.health_results_frame = tk.Frame(self.health_content, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+            self.health_results_frame.pack(fill="x", pady=5)
+            self.health_res_lbl = tk.Label(self.health_results_frame, text="Water Target: 2.95 Liters / day", font=self.scale_font("Segoe UI", 14, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"])
+            self.health_res_lbl.pack(pady=5)
+
+    # --- Module: History ---
+    def build_history(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Calculation History")
+        
+        history_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        history_frame.pack(padx=50, pady=10, fill="both", expand=True)
+        
+        self.history_listbox = tk.Listbox(
+            history_frame,
+            font=self.scale_font("Consolas", 11),
+            bg=theme["bg"],
+            fg=theme["display_fg"],
+            bd=0,
+            highlightthickness=0,
+            selectbackground=theme["btn_op_bg"],
+            selectforeground=theme["btn_op_fg"]
+        )
+        self.history_listbox.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = tk.Scrollbar(history_frame, orient="vertical", command=self.history_listbox.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.history_listbox.config(yscrollcommand=scrollbar.set)
+        
+        if not self.history_log:
+            self.history_listbox.insert(tk.END, "No recent calculations found.")
+        else:
+            for item in reversed(self.history_log):
+                line = f"[{item['time']}] {item['expr']} = {item['res']}"
+                self.history_listbox.insert(tk.END, line)
+                
+        self.history_listbox.bind("<Double-Button-1>", self.on_history_double_click)
+        
+        btn_frame = tk.Frame(self.center_pane, bg=theme["bg"])
+        btn_frame.pack(pady=15)
+        
+        colors = self.get_category_colors("spec", theme)
+        clear_btn = RoundedButton(
+            btn_frame, text="Clear Logs", radius=8, font=self.scale_font("Segoe UI", 11, "bold"),
+            normal_bg=colors["normal_bg"], hover_bg=colors["hover_bg"], active_bg=colors["active_bg"],
+            normal_fg=colors["normal_fg"], hover_fg=colors["hover_fg"], active_fg=colors["active_fg"],
+            command=self.clear_history, width=120, height=35
+        )
+        clear_btn.pack()
+
+    def on_history_double_click(self, event):
+        try:
+            sel_idx = self.history_listbox.curselection()[0]
+            sel_text = self.history_listbox.get(sel_idx)
+            if "=" in sel_text:
+                result_part = sel_text.split("=")[1].strip()
+                self.root.clipboard_clear()
+                self.root.clipboard_append(result_part)
+        except IndexError:
+            pass
+
+    def clear_history(self):
+        self.history_log.clear()
+        self.rebuild_center()
+
+    # --- Module: Settings ---
+    def build_settings(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Settings & Config")
+        
+        card = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        card.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(card, text="Interface Font Scaling:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).grid(row=0, column=0, sticky="w", pady=10)
+        
+        scales = {"Standard (100%)": 1.0, "Medium (120%)": 1.2, "Large (140%)": 1.4, "Extra Large (160%)": 1.6}
+        current_scale_lbl = [k for k, v in scales.items() if v == self.font_scale][0]
+        
+        self.settings_scale_var = tk.StringVar(value=current_scale_lbl)
+        scale_combo = ttk.Combobox(card, textvariable=self.settings_scale_var, values=list(scales.keys()), state="readonly", font=self.scale_font("Segoe UI", 10))
+        scale_combo.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        scale_combo.bind("<<ComboboxSelected>>", self.on_scale_selected)
+        
+        card.columnconfigure(1, weight=1)
+        
+        credit_card = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        credit_card.pack(padx=50, pady=10, fill="x")
+        
+        tk.Label(credit_card, text="Credits & Build Version", font=self.scale_font("Segoe UI", 12, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"]).pack(anchor="w", pady=(0, 5))
+        tk.Label(credit_card, text="Smart Multi-Purpose Calculator Suite v2.1.0\nCreated using Python and Tkinter UI Engine.\nFully optimized for high-density Windows screens.", font=self.scale_font("Segoe UI", 10), bg=theme["display_bg"], fg=theme["display_fg"], justify="left").pack(anchor="w")
+
+    def on_scale_selected(self, event):
+        scales = {"Standard (100%)": 1.0, "Medium (120%)": 1.2, "Large (140%)": 1.4, "Extra Large (160%)": 1.6}
+        self.font_scale = scales[self.settings_scale_var.get()]
+        
+        self.left_sidebar.destroy()
+        self.right_sidebar.destroy()
+        self.center_pane.destroy()
+        
+        self.setup_ui_layout()
+        self.configure_combo_styles()
+        self.rebuild_center()
+
+    # --- Module: Target Audience ---
+    def build_target_audience(self):
+        theme = self.themes[self.current_theme]
+        self.draw_center_header("Target Audience Profiles")
+        
+        card = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=15, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        card.pack(padx=40, pady=5, fill="x")
+        
+        tk.Label(card, text="Select Your Profile:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).pack(side="left")
+        self.audience_profile_var = tk.StringVar(value="Financial Planner")
+        profile_combo = ttk.Combobox(card, textvariable=self.audience_profile_var, values=["Financial Planner", "Student / Analyst", "Health Enthusiast", "Engineer / Scientist"], state="readonly", font=self.scale_font("Segoe UI", 10))
+        profile_combo.pack(side="left", padx=10)
+        profile_combo.bind("<<ComboboxSelected>>", lambda e: self.rebuild_audience_details())
+        
+        self.audience_detail_frame = tk.Frame(self.center_pane, bg=theme["display_bg"], padx=20, pady=20, bd=0, highlightthickness=1, highlightbackground=theme["btn_num_bg"])
+        self.audience_detail_frame.pack(padx=40, pady=15, fill="both", expand=True)
+        
+        self.rebuild_audience_details()
+
+    def rebuild_audience_details(self):
+        for w in self.audience_detail_frame.winfo_children():
+            w.destroy()
+            
+        theme = self.themes[self.current_theme]
+        profile = self.audience_profile_var.get()
+        colors = self.get_category_colors("op", theme)
+        
+        desc = ""
+        recs = []
+        
+        if profile == "Financial Planner":
+            desc = "Designed to assist in budgeting, tax forecasting, loan EMI evaluation, and compound interest calculations for rapid investment projections."
+            recs = [("Finance Suite", "Finance"), ("Retirement Planner", "Retirement Planning"), ("Basic Calculator", "Basic Calculator")]
+        elif profile == "Student / Analyst":
+            desc = "Optimized for algebra, statistical processing, basic math homework, list evaluations (mean/median/std dev), and standard calculation steps."
+            recs = [("Statistical Hub", "Statistical"), ("Basic Calculator", "Basic Calculator"), ("Unit Converter", "Unit Converter")]
+        elif profile == "Health Enthusiast":
+            desc = "Tailored to calculate healthy metrics, including Body Mass Index (BMI), daily calorie maintenance numbers, and hydration intake estimates."
+            recs = [("Health Hub", "Health Calculator"), ("Age Calculator", "Age Calculator")]
+        else:  # Engineer / Scientist
+            desc = "Built for handling complex math, trigs, logs, factorials, scientific constants (e, pi), and advanced physical unit conversions."
+            recs = [("Scientific Hub", "Scientific Calculator"), ("Unit Converter", "Unit Converter"), ("Statistical Calculator", "Statistical")]
+            
+        tk.Label(self.audience_detail_frame, text=f"Profile: {profile}", font=self.scale_font("Segoe UI", 14, "bold"), bg=theme["display_bg"], fg=theme["btn_op_bg"]).pack(anchor="w", pady=(0, 5))
+        tk.Label(self.audience_detail_frame, text=desc, font=self.scale_font("Segoe UI", 11), bg=theme["display_bg"], fg=theme["display_fg"], justify="left", wraplength=450).pack(anchor="w", pady=5)
+        
+        tk.Label(self.audience_detail_frame, text="Recommended Utilities for You:", font=self.scale_font("Segoe UI", 11, "bold"), bg=theme["display_bg"], fg=theme["display_fg"]).pack(anchor="w", pady=(15, 8))
+        
+        for display_name, internal_name in recs:
+            btn = RoundedButton(
+                self.audience_detail_frame,
+                text=f"👉 Open {display_name}",
+                radius=8,
+                font=self.scale_font("Segoe UI", 10, "bold"),
+                normal_bg=colors["normal_bg"],
+                hover_bg=colors["hover_bg"],
+                active_bg=colors["active_bg"],
+                normal_fg=colors["normal_fg"],
+                hover_fg=colors["hover_fg"],
+                active_fg=colors["active_fg"],
+                command=lambda dest=internal_name: self.navigation_click(dest),
+                height=32
+            )
+            btn.pack(anchor="w", pady=4, padx=10, fill="x", ipady=2)
 
 
 if __name__ == "__main__":
-    # Standard high-DPI scaling check for beautiful crisp fonts on modern Windows
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except Exception:
-        pass
-        
-    app = SmarCalcApp()
-    app.mainloop()
+    print("Initializing Smart Multi-Purpose Calculator...")
+    root = tk.Tk()
+    app = SmartMultiCalculator(root)
+    print("Application successfully initialized and running.")
+    root.mainloop()
